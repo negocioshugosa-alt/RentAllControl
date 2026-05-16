@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DashboardLayoutClient } from "./DashboardLayoutClient";
 
 export async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
@@ -18,7 +18,7 @@ export async function AppLayout({ children }: { children: React.ReactNode }) {
   const { count: alertCount } = await supabase
     .from("alerts")
     .select("*", { count: "exact", head: true })
-    .eq("company_id", profile?.company_id)
+    .eq("company_id", (profile as any)?.company_id)
     .eq("is_read", false);
 
   return (

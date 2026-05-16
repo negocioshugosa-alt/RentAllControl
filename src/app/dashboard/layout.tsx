@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DashboardLayoutClient } from "@/components/shared/DashboardLayoutClient";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
@@ -22,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <DashboardLayoutClient
-      companyName={profile?.companies?.name}
+      companyName={(profile as any)?.companies?.name}
       userName={profile?.name}
       alertCount={alertCount || 0}
     >
