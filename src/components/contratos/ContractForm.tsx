@@ -1,9 +1,10 @@
 "use client";
 // src/components/contratos/ContractForm.tsx
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { X } from "lucide-react";
+import { NumericFormat } from "react-number-format";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { generateContractNumber } from "@/lib/utils";
@@ -17,11 +18,11 @@ const schema = z.object({
   status: z.enum(["ativo", "encerrado", "cancelado", "pendente"]),
   start_date: z.string().min(1, "Data de início obrigatória"),
   end_date: z.string().optional(),
-  daily_rate: z.number().optional(),
-  monthly_rate: z.number().optional(),
+  daily_rate: z.number().optional().nullable(),
+  monthly_rate: z.number().optional().nullable(),
   payment_frequency: z.enum(["diario", "semanal", "quinzenal", "mensal"]),
-  payment_day: z.number().min(1).max(31).optional(),
-  deposit_value: z.number().optional(),
+  payment_day: z.number().min(1).max(31).optional().nullable(),
+  deposit_value: z.number().optional().nullable(),
   deposit_paid: z.boolean().default(false),
   notes: z.string().optional(),
 });
@@ -66,7 +67,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
     },
   });
 
-  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       contract_number: contract?.contract_number || generateContractNumber(),
@@ -75,17 +76,16 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
       status: contract?.status || "ativo",
       start_date: contract?.start_date || new Date().toISOString().split("T")[0],
       end_date: contract?.end_date || "",
-      daily_rate: contract?.daily_rate ? Number(contract.daily_rate) : undefined,
-      monthly_rate: contract?.monthly_rate ? Number(contract.monthly_rate) : undefined,
+      daily_rate: contract?.daily_rate ? Number(contract.daily_rate) : null,
+      monthly_rate: contract?.monthly_rate ? Number(contract.monthly_rate) : null,
       payment_frequency: contract?.payment_frequency || "mensal",
       payment_day: contract?.payment_day || 5,
-      deposit_value: contract?.deposit_value ? Number(contract.deposit_value) : undefined,
+      deposit_value: contract?.deposit_value ? Number(contract.deposit_value) : null,
       deposit_paid: contract?.deposit_paid || false,
       notes: contract?.notes || "",
     },
   });
 
-  // Auto-fill rates when equipment is selected
   function handleEquipmentChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const eq = equipment.find((eq: any) => eq.id === e.target.value);
     if (eq) {
@@ -96,7 +96,13 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
 
   async function onSubmit(data: FormData) {
     const supabase = createClient();
-    const payload = { ...data, company_id: companyId };
+    const payload = {
+      ...data,
+      company_id: companyId,
+      daily_rate: data.daily_rate || null,
+      monthly_rate: data.monthly_rate || null,
+      deposit_value: data.deposit_value || null,
+    };
 
     const { error } = isEdit
       ? await supabase.from("contracts").update(payload).eq("id", contract!.id)
@@ -104,12 +110,8 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
 
     if (error) { toast.error(error.message); return; }
 
-    // Update equipment status
     if (!isEdit && data.status === "ativo") {
-      await supabase
-        .from("equipment")
-        .update({ status: "alugado" })
-        .eq("id", data.equipment_id);
+      await supabase.from("equipment").update({ status: "alugado" }).eq("id", data.equipment_id);
     }
 
     toast.success(isEdit ? "Contrato atualizado!" : "Contrato criado!");
@@ -120,14 +122,20 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-bold font-display">{isEdit ? "Editar Contrato" : "Novo Contrato"}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg"><X className="w-4 h-4" /></button>
+          <h2 className="text-lg font-bold font-display">
+            {isEdit ? "Editar Contrato" : "Novo Contrato"}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto flex-1 px-6 py-4 space-y-6">
           {/* Identificação */}
           <section>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Identificação</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Identificação
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Número do Contrato *</label>
@@ -176,7 +184,9 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
 
           {/* Período */}
           <section>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Período</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Período
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Data de Início *</label>
@@ -192,15 +202,49 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
 
           {/* Financeiro */}
           <section>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Financeiro</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Financeiro
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Valor Diária (R$)</label>
-                <input {...register("daily_rate", { valueAsNumber: true })} type="number" step="0.01" className="input w-full" />
+                <Controller
+                  name="daily_rate"
+                  control={control}
+                  render={({ field }) => (
+                    <NumericFormat
+                      className="input w-full"
+                      thousandSeparator="."
+                      decimalSeparator=","
+                      decimalScale={2}
+                      fixedDecimalScale
+                      prefix="R$ "
+                      placeholder="R$ 0,00"
+                      value={field.value ?? ""}
+                      onValueChange={(vals) => field.onChange(vals.floatValue ?? null)}
+                    />
+                  )}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Mensalidade (R$)</label>
-                <input {...register("monthly_rate", { valueAsNumber: true })} type="number" step="0.01" className="input w-full" />
+                <Controller
+                  name="monthly_rate"
+                  control={control}
+                  render={({ field }) => (
+                    <NumericFormat
+                      className="input w-full"
+                      thousandSeparator="."
+                      decimalSeparator=","
+                      decimalScale={2}
+                      fixedDecimalScale
+                      prefix="R$ "
+                      placeholder="R$ 0,00"
+                      value={field.value ?? ""}
+                      onValueChange={(vals) => field.onChange(vals.floatValue ?? null)}
+                    />
+                  )}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Frequência de Cobrança</label>
@@ -213,14 +257,42 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Dia de Pagamento</label>
-                <input {...register("payment_day", { valueAsNumber: true })} type="number" min={1} max={31} className="input w-full" placeholder="5" />
+                <input
+                  {...register("payment_day", { valueAsNumber: true })}
+                  type="number"
+                  min={1}
+                  max={31}
+                  className="input w-full"
+                  placeholder="5"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Valor Caução (R$)</label>
-                <input {...register("deposit_value", { valueAsNumber: true })} type="number" step="0.01" className="input w-full" />
+                <Controller
+                  name="deposit_value"
+                  control={control}
+                  render={({ field }) => (
+                    <NumericFormat
+                      className="input w-full"
+                      thousandSeparator="."
+                      decimalSeparator=","
+                      decimalScale={2}
+                      fixedDecimalScale
+                      prefix="R$ "
+                      placeholder="R$ 0,00"
+                      value={field.value ?? ""}
+                      onValueChange={(vals) => field.onChange(vals.floatValue ?? null)}
+                    />
+                  )}
+                />
               </div>
               <div className="flex items-center gap-3 pt-6">
-                <input {...register("deposit_paid")} type="checkbox" id="deposit_paid" className="w-4 h-4 rounded border accent-primary" />
+                <input
+                  {...register("deposit_paid")}
+                  type="checkbox"
+                  id="deposit_paid"
+                  className="w-4 h-4 rounded border accent-primary"
+                />
                 <label htmlFor="deposit_paid" className="text-sm font-medium">Caução já pago</label>
               </div>
             </div>
@@ -233,7 +305,9 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
         </form>
 
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">
+            Cancelar
+          </button>
           <button
             onClick={handleSubmit(onSubmit)}
             disabled={isSubmitting}

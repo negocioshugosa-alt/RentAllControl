@@ -1,9 +1,10 @@
 "use client";
 // src/components/financeiro/TransactionForm.tsx
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { X } from "lucide-react";
+import { NumericFormat } from "react-number-format";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { TRANSACTION_CATEGORIES } from "@/lib/utils";
@@ -14,7 +15,7 @@ const schema = z.object({
   type: z.enum(["receita", "despesa"]),
   category: z.string().min(1, "Categoria obrigatória"),
   description: z.string().min(2, "Descrição obrigatória"),
-  amount: z.number().min(0.01, "Valor deve ser maior que zero"),
+  amount: z.number({ required_error: "Valor obrigatório" }).min(0.01, "Valor deve ser maior que zero"),
   due_date: z.string().min(1, "Data de vencimento obrigatória"),
   paid_date: z.string().optional(),
   status: z.enum(["pendente", "pago", "vencido", "cancelado"]),
@@ -42,11 +43,7 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
     queryKey: ["clients-select", companyId],
     queryFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("clients")
-        .select("id, name")
-        .eq("company_id", companyId)
-        .order("name");
+      const { data } = await supabase.from("clients").select("id, name").eq("company_id", companyId).order("name");
       return data || [];
     },
   });
@@ -55,11 +52,7 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
     queryKey: ["equipment-select-min", companyId],
     queryFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("equipment")
-        .select("id, name, code")
-        .eq("company_id", companyId)
-        .order("name");
+      const { data } = await supabase.from("equipment").select("id, name, code").eq("company_id", companyId).order("name");
       return data || [];
     },
   });
@@ -78,7 +71,7 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
     },
   });
 
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, watch, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       type: transaction?.type || defaultType,
@@ -165,25 +158,49 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <label className="text-sm font-medium mb-1 block">Descrição *</label>
-              <input {...register("description")} className="input w-full" placeholder="Ex: Aluguel retroescavadeira — Março/2025" />
+              <input
+                {...register("description")}
+                className="input w-full"
+                placeholder="Ex: Aluguel retroescavadeira — Março/2025"
+              />
               {errors.description && <p className="text-xs text-destructive mt-1">{errors.description.message}</p>}
             </div>
+
             <div>
               <label className="text-sm font-medium mb-1 block">Categoria *</label>
               <select {...register("category")} className="input w-full">
                 {cats.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
+
             <div>
               <label className="text-sm font-medium mb-1 block">Valor (R$) *</label>
-              <input {...register("amount", { valueAsNumber: true })} type="number" step="0.01" min="0.01" className="input w-full" placeholder="0,00" />
+              <Controller
+                name="amount"
+                control={control}
+                render={({ field }) => (
+                  <NumericFormat
+                    className="input w-full"
+                    thousandSeparator="."
+                    decimalSeparator=","
+                    decimalScale={2}
+                    fixedDecimalScale
+                    prefix="R$ "
+                    placeholder="R$ 0,00"
+                    value={field.value ?? ""}
+                    onValueChange={(vals) => field.onChange(vals.floatValue)}
+                  />
+                )}
+              />
               {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount.message}</p>}
             </div>
+
             <div>
               <label className="text-sm font-medium mb-1 block">Vencimento *</label>
               <input {...register("due_date")} type="date" className="input w-full" />
               {errors.due_date && <p className="text-xs text-destructive mt-1">{errors.due_date.message}</p>}
             </div>
+
             <div>
               <label className="text-sm font-medium mb-1 block">Status *</label>
               <select {...register("status")} className="input w-full">
@@ -193,12 +210,14 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
                 <option value="cancelado">Cancelado</option>
               </select>
             </div>
-            {(txStatus === "pago") && (
+
+            {txStatus === "pago" && (
               <div>
                 <label className="text-sm font-medium mb-1 block">Data de Pagamento</label>
                 <input {...register("paid_date")} type="date" className="input w-full" />
               </div>
             )}
+
             <div>
               <label className="text-sm font-medium mb-1 block">Forma de Pagamento</label>
               <select {...register("payment_method")} className="input w-full">
@@ -215,7 +234,9 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
 
           {/* Vinculações */}
           <section>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Vinculações (opcional)</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Vinculações (opcional)
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Cliente</label>
@@ -235,7 +256,9 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
                 <label className="text-sm font-medium mb-1 block">Contrato</label>
                 <select {...register("contract_id")} className="input w-full">
                   <option value="">Nenhum</option>
-                  {contracts.map((c: any) => <option key={c.id} value={c.id}>{c.contract_number} — {c.clients?.name}</option>)}
+                  {contracts.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.contract_number} — {c.clients?.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -248,11 +271,15 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
         </form>
 
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">
+            Cancelar
+          </button>
           <button
             onClick={handleSubmit(onSubmit)}
             disabled={isSubmitting}
-            className={`px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors disabled:opacity-50 ${txType === "receita" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
+            className={`px-4 py-2 rounded-xl text-white text-sm font-medium transition-colors disabled:opacity-50 ${
+              txType === "receita" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+            }`}
           >
             {isSubmitting ? "Salvando…" : isEdit ? "Salvar" : "Criar Lançamento"}
           </button>
