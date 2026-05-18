@@ -7,17 +7,23 @@ interface Props {
   children: React.ReactNode;
   companyName?: string;
   userName?: string;
+  logoUrl?: string;
   alertCount?: number;
 }
 
-export function DashboardLayoutClient({ children, companyName, userName, alertCount }: Props) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+export function DashboardLayoutClient({ children, companyName, userName, logoUrl, alertCount }: Props) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
-        <Sidebar companyName={companyName} userName={userName} alertCount={alertCount} />
+        <Sidebar
+          companyName={companyName}
+          userName={userName}
+          logoUrl={logoUrl}
+          alertCount={alertCount}
+        />
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -25,7 +31,12 @@ export function DashboardLayoutClient({ children, companyName, userName, alertCo
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <div className="relative z-50">
-            <Sidebar companyName={companyName} userName={userName} alertCount={alertCount} />
+            <Sidebar
+              companyName={companyName}
+              userName={userName}
+              logoUrl={logoUrl}
+              alertCount={alertCount}
+            />
           </div>
         </div>
       )}

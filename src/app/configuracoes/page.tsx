@@ -1,6 +1,6 @@
 "use client";
 // src/app/configuracoes/page.tsx
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +8,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/shared/Header";
 import { toast } from "sonner";
-import { Building2, Key, User, Save, Eye, EyeOff } from "lucide-react";
+import { Building2, Key, User, Save, Eye, EyeOff, Upload, X, ImageIcon } from "lucide-react";
+import Image from "next/image";
 
 const companySchema = z.object({
   name: z.string().min(2, "Nome obrigatório"),
@@ -44,6 +45,8 @@ async function getProfile() {
 export default function ConfiguracoesPage() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [activeTab, setActiveTab] = useState<"empresa" | "integracao" | "perfil">("empresa");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: getProfile });
@@ -71,13 +74,65 @@ export default function ConfiguracoesPage() {
     },
   });
 
+  // Upload de logo
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione uma imagem válida");
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop();
+      const fileName = `${company.id}/logo.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("company-logos")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("company-logos")
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from("companies")
+        .update({ logo_url: publicUrl })
+        .eq("id", company.id);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Logo atualizada com sucesso!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao fazer upload");
+    } finally {
+      setUploadingLogo(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleRemoveLogo() {
+    const supabase = createClient();
+    await supabase.from("companies").update({ logo_url: null }).eq("id", company.id);
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
+    toast.success("Logo removida");
+  }
+
   const saveCompany = useMutation({
     mutationFn: async (data: CompanyData) => {
       const supabase = createClient();
-      const { error } = await supabase
-        .from("companies")
-        .update(data)
-        .eq("id", company.id);
+      const { error } = await supabase.from("companies").update(data).eq("id", company.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -90,10 +145,7 @@ export default function ConfiguracoesPage() {
   const saveAsaas = useMutation({
     mutationFn: async (data: AsaasData) => {
       const supabase = createClient();
-      const { error } = await supabase
-        .from("companies")
-        .update(data)
-        .eq("id", company.id);
+      const { error } = await supabase.from("companies").update(data).eq("id", company.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -108,6 +160,8 @@ export default function ConfiguracoesPage() {
     { id: "integracao", label: "Integração Asaas", icon: Key },
     { id: "perfil", label: "Meu Perfil", icon: User },
   ] as const;
+
+  const STATES = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
 
   return (
     <div className="flex flex-col flex-1">
@@ -132,57 +186,121 @@ export default function ConfiguracoesPage() {
 
         {/* Empresa */}
         {activeTab === "empresa" && (
-          <div className="rounded-xl border bg-card p-6 space-y-4">
-            <h2 className="font-semibold text-lg">Dados da Empresa</h2>
-            <form onSubmit={companyForm.handleSubmit((d) => saveCompany.mutate(d))} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="text-sm font-medium mb-1 block">Nome / Razão Social *</label>
-                  <input {...companyForm.register("name")} className="input w-full" />
-                  {companyForm.formState.errors.name && (
-                    <p className="text-xs text-destructive mt-1">{companyForm.formState.errors.name.message}</p>
+          <div className="space-y-4">
+            {/* Logo Upload */}
+            <div className="rounded-xl border bg-card p-6">
+              <h3 className="font-semibold mb-4">Logo da Empresa</h3>
+              <div className="flex items-center gap-6">
+                {/* Preview */}
+                <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 flex-shrink-0 overflow-hidden">
+                  {company?.logo_url ? (
+                    <Image
+                      src={company.logo_url}
+                      alt="Logo"
+                      width={96}
+                      height={96}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <ImageIcon className="w-8 h-8 text-muted-foreground mx-auto mb-1 opacity-40" />
+                      <p className="text-xs text-muted-foreground">Sem logo</p>
+                    </div>
                   )}
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">CNPJ</label>
-                  <input {...companyForm.register("cnpj")} className="input w-full font-mono" placeholder="00.000.000/0000-00" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Email</label>
-                  <input {...companyForm.register("email")} type="email" className="input w-full" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Telefone</label>
-                  <input {...companyForm.register("phone")} className="input w-full" placeholder="(00) 0000-0000" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">CEP</label>
-                  <input {...companyForm.register("zip_code")} className="input w-full" placeholder="00000-000" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="text-sm font-medium mb-1 block">Endereço</label>
-                  <input {...companyForm.register("address")} className="input w-full" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Cidade</label>
-                  <input {...companyForm.register("city")} className="input w-full" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">UF</label>
-                  <input {...companyForm.register("state")} className="input w-full" maxLength={2} placeholder="SP" />
+
+                {/* Actions */}
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Formatos aceitos: JPG, PNG, WebP. Tamanho máximo: 2MB.<br />
+                    Recomendado: imagem quadrada com pelo menos 200×200px.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {uploadingLogo ? "Enviando…" : "Enviar Logo"}
+                    </button>
+                    {company?.logo_url && (
+                      <button
+                        onClick={handleRemoveLogo}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                        Remover
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={saveCompany.isPending}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {saveCompany.isPending ? "Salvando…" : "Salvar"}
-                </button>
-              </div>
-            </form>
+            </div>
+
+            {/* Company Data */}
+            <div className="rounded-xl border bg-card p-6 space-y-4">
+              <h3 className="font-semibold">Dados da Empresa</h3>
+              <form onSubmit={companyForm.handleSubmit((d) => saveCompany.mutate(d))} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="text-sm font-medium mb-1 block">Nome / Razão Social *</label>
+                    <input {...companyForm.register("name")} className="input w-full" />
+                    {companyForm.formState.errors.name && (
+                      <p className="text-xs text-destructive mt-1">{companyForm.formState.errors.name.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">CNPJ</label>
+                    <input {...companyForm.register("cnpj")} className="input w-full font-mono" placeholder="00.000.000/0000-00" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Email</label>
+                    <input {...companyForm.register("email")} type="email" className="input w-full" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Telefone</label>
+                    <input {...companyForm.register("phone")} className="input w-full" placeholder="(00) 0000-0000" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">CEP</label>
+                    <input {...companyForm.register("zip_code")} className="input w-full" placeholder="00000-000" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-sm font-medium mb-1 block">Endereço</label>
+                    <input {...companyForm.register("address")} className="input w-full" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Cidade</label>
+                    <input {...companyForm.register("city")} className="input w-full" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">UF</label>
+                    <select {...companyForm.register("state")} className="input w-full">
+                      <option value="">—</option>
+                      {STATES.map((s) => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saveCompany.isPending}
+                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saveCompany.isPending ? "Salvando…" : "Salvar"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
@@ -200,15 +318,6 @@ export default function ConfiguracoesPage() {
                     Configure sua chave de API para emitir cobranças via PIX, boleto e cartão.
                   </p>
                 </div>
-              </div>
-
-              <div className="rounded-xl bg-blue-500/5 border border-blue-500/20 p-4 mb-6">
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">Como obter sua chave Asaas?</p>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal pl-4">
-                  <li>Acesse <a href="https://asaas.com" target="_blank" className="text-primary hover:underline">asaas.com</a> e faça login</li>
-                  <li>Vá em <strong>Configurações → Integrações → Chave de API</strong></li>
-                  <li>Copie a chave e cole abaixo</li>
-                </ol>
               </div>
 
               <form onSubmit={asaasForm.handleSubmit((d) => saveAsaas.mutate(d))} className="space-y-4">
@@ -229,17 +338,10 @@ export default function ConfiguracoesPage() {
                       {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ambiente: use sandbox para testes, produção para cobranças reais.
-                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">Wallet ID (opcional)</label>
-                  <input
-                    {...asaasForm.register("asaas_wallet_id")}
-                    className="input w-full font-mono text-xs"
-                    placeholder="ID da subconta Asaas"
-                  />
+                  <input {...asaasForm.register("asaas_wallet_id")} className="input w-full font-mono text-xs" />
                 </div>
                 <div className="flex justify-end">
                   <button
@@ -254,18 +356,14 @@ export default function ConfiguracoesPage() {
               </form>
             </div>
 
-            {/* Webhook info */}
             <div className="rounded-xl border bg-card p-6">
-              <h3 className="font-semibold mb-2">Configurar Webhook no Asaas</h3>
+              <h3 className="font-semibold mb-2">Webhook Asaas</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Configure o webhook no Asaas para receber baixas automáticas quando uma cobrança for paga.
+                Configure no Asaas para baixa automática de cobranças pagas.
               </p>
               <div className="bg-muted/50 rounded-lg px-4 py-3 font-mono text-xs break-all">
                 {typeof window !== "undefined" ? window.location.origin : "https://seu-app.vercel.app"}/api/webhooks/asaas
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                No painel Asaas: <strong>Configurações → Webhooks → Adicionar URL</strong>
-              </p>
             </div>
           </div>
         )}

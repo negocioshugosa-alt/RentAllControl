@@ -3,24 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Wrench,
-  Users,
-  FileText,
-  DollarSign,
-  Bell,
-  BarChart3,
-  PieChart,
-  Settings,
-  LogOut,
-  Zap,
-  ChevronDown,
-  Building2,
+  LayoutDashboard, Wrench, Users, FileText,
+  DollarSign, Bell, BarChart3, PieChart,
+  Settings, LogOut, Zap, Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 
 const navItems = [
   {
@@ -51,10 +42,11 @@ const navItems = [
 interface SidebarProps {
   companyName?: string;
   userName?: string;
+  logoUrl?: string;
   alertCount?: number;
 }
 
-export function Sidebar({ companyName = "RentAllControl", userName = "Usuário", alertCount = 0 }: SidebarProps) {
+export function Sidebar({ companyName = "Minha Empresa", userName = "Usuário", logoUrl, alertCount = 0 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -66,16 +58,30 @@ export function Sidebar({ companyName = "RentAllControl", userName = "Usuário",
     router.push("/login");
   }
 
+  // Iniciais da empresa para o avatar
+  const initials = companyName
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
     <aside className="sidebar flex flex-col h-screen sticky top-0 z-30 flex-shrink-0">
-      {/* Logo */}
+      {/* Logo / Empresa */}
       <div className="flex items-center gap-2.5 px-4 py-5 border-b border-white/5">
-        <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
-          <Zap className="w-4 h-4 text-white" />
-        </div>
+        {logoUrl ? (
+          <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+            <Image src={logoUrl} alt={companyName} width={36} height={36} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-9 h-9 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+            {initials || <Zap className="w-4 h-4" />}
+          </div>
+        )}
         <div className="min-w-0">
-          <p className="font-display font-bold text-white text-sm leading-tight truncate">RentAllControl</p>
-          <p className="text-xs truncate" style={{ color: "hsl(var(--sidebar-muted))" }}>{companyName}</p>
+          <p className="font-display font-bold text-white text-sm leading-tight truncate">{companyName}</p>
+          <p className="text-xs truncate" style={{ color: "hsl(var(--sidebar-muted))" }}>{userName}</p>
         </div>
       </div>
 

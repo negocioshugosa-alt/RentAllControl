@@ -11,7 +11,7 @@ export async function AppLayout({ children }: { children: React.ReactNode }) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*, companies(name)")
+    .select("*, companies(name, logo_url)")
     .eq("user_id", user.id)
     .single();
 
@@ -25,6 +25,7 @@ export async function AppLayout({ children }: { children: React.ReactNode }) {
     <DashboardLayoutClient
       companyName={(profile as any)?.companies?.name}
       userName={profile?.name}
+      logoUrl={(profile as any)?.companies?.logo_url}
       alertCount={alertCount || 0}
     >
       {children}
