@@ -69,7 +69,7 @@ export default async function DashboardPage() {
       <div className="flex-1 p-6 space-y-6">
         <MetricCards metrics={metrics} />
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-2"><RevenueChart data={[]} /></div>
+          <div className="xl:col-span-2"><RevenueChart /></div>
           <div><EquipmentStatus metrics={metrics} /></div>
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

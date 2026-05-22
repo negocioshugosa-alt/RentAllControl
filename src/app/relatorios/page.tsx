@@ -4,94 +4,46 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/shared/Header";
-import { BarChart3, Download, FileText, Users, Wrench, DollarSign, AlertTriangle } from "lucide-react";
+import { BarChart3, Download, FileText, Users, Wrench, DollarSign, AlertTriangle, FileSpreadsheet } from "lucide-react";
 import { formatCurrency, formatDate, formatDocument } from "@/lib/utils";
 import { toast } from "sonner";
 
-async function getCompanyId() {
+async function getCompanyData() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data } = await supabase.from("profiles").select("company_id, companies(name)").eq("user_id", user.id).single();
-  return { companyId: data?.company_id, companyName: (data as any)?.companies?.name };
+  const { data } = await supabase
+    .from("profiles")
+    .select("company_id, companies(name)")
+    .eq("user_id", user.id)
+    .single();
+  return {
+    companyId: data?.company_id,
+    companyName: (data as any)?.companies?.name || "Empresa",
+  };
 }
 
 type ReportType = "financeiro" | "equipamentos" | "clientes" | "contratos" | "inadimplencia";
+type ExportFormat = "pdf" | "excel";
 
 const reports = [
-  {
-    id: "financeiro" as ReportType,
-    title: "Relatório Financeiro",
-    description: "Receitas, despesas e fluxo de caixa do período",
-    icon: DollarSign,
-    color: "text-blue-600",
-    bg: "bg-blue-500/10",
-  },
-  {
-    id: "equipamentos" as ReportType,
-    title: "Relatório por Equipamento",
-    description: "Lucratividade e indicadores por equipamento",
-    icon: Wrench,
-    color: "text-purple-600",
-    bg: "bg-purple-500/10",
-  },
-  {
-    id: "clientes" as ReportType,
-    title: "Relatório de Clientes",
-    description: "Cadastro completo e histórico financeiro",
-    icon: Users,
-    color: "text-green-600",
-    bg: "bg-green-500/10",
-  },
-  {
-    id: "contratos" as ReportType,
-    title: "Contratos Ativos",
-    description: "Todos os contratos em andamento",
-    icon: FileText,
-    color: "text-orange-600",
-    bg: "bg-orange-500/10",
-  },
-  {
-    id: "inadimplencia" as ReportType,
-    title: "Relatório de Inadimplência",
-    description: "Clientes e contas com pagamentos em atraso",
-    icon: AlertTriangle,
-    color: "text-red-600",
-    bg: "bg-red-500/10",
-  },
+  { id: "financeiro" as ReportType, title: "Relatório Financeiro", description: "Receitas, despesas e fluxo de caixa do período", icon: DollarSign, color: "text-blue-600", bg: "bg-blue-500/10" },
+  { id: "equipamentos" as ReportType, title: "Relatório por Equipamento", description: "Lucratividade e indicadores por equipamento", icon: Wrench, color: "text-purple-600", bg: "bg-purple-500/10" },
+  { id: "clientes" as ReportType, title: "Relatório de Clientes", description: "Cadastro completo e histórico financeiro", icon: Users, color: "text-green-600", bg: "bg-green-500/10" },
+  { id: "contratos" as ReportType, title: "Contratos Ativos", description: "Todos os contratos em andamento", icon: FileText, color: "text-orange-600", bg: "bg-orange-500/10" },
+  { id: "inadimplencia" as ReportType, title: "Inadimplência", description: "Clientes e contas com pagamentos em atraso", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-500/10" },
 ];
 
-async function generateReport(type: ReportType, companyId: string, companyName: string, start: string, end: string) {
+// ---- EXCEL EXPORT ----
+async function exportExcel(type: ReportType, companyId: string, companyName: string, start: string, end: string) {
+  const XLSX = await import("xlsx");
   const supabase = createClient();
-  const { jsPDF } = await import("jspdf");
-  const autoTable = (await import("jspdf-autotable")).default;
-
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-
-  // Header
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, 0, pageWidth, 30, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("RentAllControl", 14, 18);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text(companyName, pageWidth - 14, 18, { align: "right" });
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  const reportTitle = reports.find((r) => r.id === type)?.title || "Relatório";
-  doc.text(reportTitle, 14, 44);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Gerado em ${formatDate(new Date())} | Período: ${formatDate(start)} a ${formatDate(end)}`, 14, 51);
+  let rows: any[] = [];
+  let sheetName = "Relatório";
+  let headers: string[] = [];
 
   if (type === "financeiro") {
-    const { data: txs } = await supabase
+    const { data } = await supabase
       .from("transactions")
       .select("*, clients(name), equipment(name)")
       .eq("company_id", companyId)
@@ -99,63 +51,59 @@ async function generateReport(type: ReportType, companyId: string, companyName: 
       .lte("due_date", end)
       .order("due_date");
 
-    const rows = (txs || []).map((tx) => [
-      formatDate(tx.due_date),
-      tx.type === "receita" ? "Receita" : "Despesa",
-      tx.description,
-      (tx as any).clients?.name || "—",
-      tx.status.charAt(0).toUpperCase() + tx.status.slice(1),
-      `R$ ${Number(tx.amount).toFixed(2)}`,
-    ]);
-
-    autoTable(doc, {
-      startY: 60,
-      head: [["Data", "Tipo", "Descrição", "Cliente", "Status", "Valor"]],
-      body: rows,
-      theme: "striped",
-      headStyles: { fillColor: [37, 99, 235] },
-    });
-
-    const totals = (txs || []).reduce(
-      (acc, tx) => {
-        if (tx.type === "receita") acc.receita += Number(tx.amount);
-        else acc.despesa += Number(tx.amount);
-        return acc;
-      },
-      { receita: 0, despesa: 0 }
-    );
-
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFont("helvetica", "bold");
-    doc.text(`Receitas: ${formatCurrency(totals.receita)}`, 14, finalY);
-    doc.text(`Despesas: ${formatCurrency(totals.despesa)}`, 80, finalY);
-    doc.text(`Lucro: ${formatCurrency(totals.receita - totals.despesa)}`, 150, finalY);
+    sheetName = "Financeiro";
+    headers = ["Data", "Tipo", "Descrição", "Categoria", "Cliente", "Status", "Valor (R$)"];
+    rows = (data || []).map((t) => ({
+      Data: formatDate(t.due_date),
+      Tipo: t.type === "receita" ? "Receita" : "Despesa",
+      Descrição: t.description,
+      Categoria: t.category,
+      Cliente: (t as any).clients?.name || "—",
+      Status: t.status,
+      "Valor (R$)": Number(t.amount),
+    }));
   }
 
   if (type === "equipamentos") {
     const { data: eqs } = await supabase
-      .from("equipment_financial_summary")
+      .from("equipment")
       .select("*")
       .eq("company_id", companyId)
-      .order("net_profit", { ascending: false });
+      .order("name");
 
-    const rows = (eqs || []).map((eq: any, i: number) => [
-      i + 1,
-      eq.equipment_name,
-      eq.code,
-      eq.status,
-      `R$ ${Number(eq.total_revenue).toFixed(2)}`,
-      `R$ ${Number(eq.total_costs).toFixed(2)}`,
-      `R$ ${Number(eq.net_profit).toFixed(2)}`,
-    ]);
+    sheetName = "Equipamentos";
+    headers = ["Código", "Nome", "Categoria", "Marca", "Modelo", "Ano", "Status", "Diária (R$)", "Mensalidade (R$)"];
+    rows = (eqs || []).map((e) => ({
+      Código: e.code,
+      Nome: e.name,
+      Categoria: e.category,
+      Marca: e.brand || "—",
+      Modelo: e.model || "—",
+      Ano: e.year || "—",
+      Status: e.status,
+      "Diária (R$)": e.daily_rate ? Number(e.daily_rate) : 0,
+      "Mensalidade (R$)": e.monthly_rate ? Number(e.monthly_rate) : 0,
+    }));
+  }
 
-    autoTable(doc, {
-      startY: 60,
-      head: [["#", "Nome", "Código", "Status", "Receita", "Custo", "Lucro"]],
-      body: rows,
-      theme: "striped",
-      headStyles: { fillColor: [37, 99, 235] },
-    });
+  if (type === "clientes") {
+    const { data: clients } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("name");
+
+    sheetName = "Clientes";
+    headers = ["Nome", "Tipo", "CPF/CNPJ", "Email", "Telefone", "Cidade", "UF"];
+    rows = (clients || []).map((c) => ({
+      Nome: c.name,
+      Tipo: c.type === "pf" ? "Pessoa Física" : "Pessoa Jurídica",
+      "CPF/CNPJ": formatDocument(c.document),
+      Email: c.email || "—",
+      Telefone: c.mobile || c.phone || "—",
+      Cidade: c.city || "—",
+      UF: c.state || "—",
+    }));
   }
 
   if (type === "contratos") {
@@ -166,22 +114,18 @@ async function generateReport(type: ReportType, companyId: string, companyName: 
       .eq("status", "ativo")
       .order("start_date");
 
-    const rows = (contracts || []).map((c: any) => [
-      c.contract_number,
-      c.clients?.name,
-      c.equipment?.name,
-      formatDate(c.start_date),
-      c.end_date ? formatDate(c.end_date) : "Indeterminado",
-      c.monthly_rate ? `R$ ${Number(c.monthly_rate).toFixed(2)}/mês` : c.daily_rate ? `R$ ${Number(c.daily_rate).toFixed(2)}/dia` : "—",
-    ]);
-
-    autoTable(doc, {
-      startY: 60,
-      head: [["Número", "Cliente", "Equipamento", "Início", "Término", "Valor"]],
-      body: rows,
-      theme: "striped",
-      headStyles: { fillColor: [37, 99, 235] },
-    });
+    sheetName = "Contratos";
+    headers = ["Número", "Cliente", "Equipamento", "Início", "Término", "Mensalidade (R$)", "Diária (R$)", "Status"];
+    rows = (contracts || []).map((c: any) => ({
+      Número: c.contract_number,
+      Cliente: c.clients?.name || "—",
+      Equipamento: c.equipment?.name || "—",
+      Início: formatDate(c.start_date),
+      Término: c.end_date ? formatDate(c.end_date) : "Indeterminado",
+      "Mensalidade (R$)": c.monthly_rate ? Number(c.monthly_rate) : 0,
+      "Diária (R$)": c.daily_rate ? Number(c.daily_rate) : 0,
+      Status: c.status,
+    }));
   }
 
   if (type === "inadimplencia") {
@@ -194,52 +138,202 @@ async function generateReport(type: ReportType, companyId: string, companyName: 
       .lt("due_date", new Date().toISOString().split("T")[0])
       .order("due_date");
 
-    const rows = (txs || []).map((tx) => [
-      (tx as any).clients?.name || "—",
-      tx.description,
-      formatDate(tx.due_date),
-      tx.status.charAt(0).toUpperCase() + tx.status.slice(1),
-      `R$ ${Number(tx.amount).toFixed(2)}`,
+    sheetName = "Inadimplência";
+    headers = ["Cliente", "Descrição", "Vencimento", "Dias em Atraso", "Status", "Valor (R$)"];
+    rows = (txs || []).map((t) => {
+      const daysLate = Math.floor((new Date().getTime() - new Date(t.due_date).getTime()) / 86400000);
+      return {
+        Cliente: (t as any).clients?.name || "—",
+        Descrição: t.description,
+        Vencimento: formatDate(t.due_date),
+        "Dias em Atraso": daysLate,
+        Status: t.status,
+        "Valor (R$)": Number(t.amount),
+      };
+    });
+  }
+
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+
+  // Column widths
+  ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 2, 15) }));
+
+  // Header style
+  headers.forEach((_, i) => {
+    const cell = XLSX.utils.encode_cell({ r: 0, c: i });
+    if (!ws[cell]) return;
+    ws[cell].s = { font: { bold: true }, fill: { fgColor: { rgb: "2563EB" } }, font2: { color: { rgb: "FFFFFF" } } };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  // Info sheet
+  const infoData = [
+    ["RentAllControl — " + reports.find((r) => r.id === type)?.title],
+    ["Empresa:", companyName],
+    ["Período:", `${formatDate(start)} a ${formatDate(end)}`],
+    ["Gerado em:", formatDate(new Date())],
+    ["Total de registros:", rows.length],
+  ];
+  const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+  wsInfo["!cols"] = [{ wch: 25 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, wsInfo, "Informações");
+
+  XLSX.writeFile(wb, `rentallcontrol-${type}-${new Date().toISOString().split("T")[0]}.xlsx`);
+}
+
+// ---- PDF EXPORT ----
+async function exportPdf(type: ReportType, companyId: string, companyName: string, start: string, end: string) {
+  const { jsPDF } = await import("jspdf");
+  const autoTable = (await import("jspdf-autotable")).default;
+  const supabase = createClient();
+
+  const doc = new jsPDF();
+  const W = doc.internal.pageSize.getWidth();
+
+  // Header
+  doc.setFillColor(37, 99, 235);
+  doc.rect(0, 0, W, 28, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("RentAllControl", 14, 13);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(companyName, W - 14, 13, { align: "right" });
+
+  const reportTitle = reports.find((r) => r.id === type)?.title || "Relatório";
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text(reportTitle, 14, 42);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Gerado em ${formatDate(new Date())} | Período: ${formatDate(start)} a ${formatDate(end)}`, 14, 49);
+
+  if (type === "financeiro") {
+    const { data } = await supabase
+      .from("transactions")
+      .select("*, clients(name)")
+      .eq("company_id", companyId)
+      .gte("due_date", start)
+      .lte("due_date", end)
+      .order("due_date");
+
+    const rows = (data || []).map((t) => [
+      formatDate(t.due_date),
+      t.type === "receita" ? "Receita" : "Despesa",
+      t.description.substring(0, 40),
+      (t as any).clients?.name || "—",
+      t.status,
+      `R$ ${Number(t.amount).toFixed(2)}`,
     ]);
 
     autoTable(doc, {
-      startY: 60,
-      head: [["Cliente", "Descrição", "Vencimento", "Status", "Valor"]],
+      startY: 56,
+      head: [["Data", "Tipo", "Descrição", "Cliente", "Status", "Valor"]],
       body: rows,
       theme: "striped",
-      headStyles: { fillColor: [220, 38, 38] },
+      headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
+      bodyStyles: { fontSize: 7.5 },
+    });
+
+    const totals = (data || []).reduce((acc, t) => {
+      if (t.type === "receita") acc.r += Number(t.amount);
+      else acc.d += Number(t.amount);
+      return acc;
+    }, { r: 0, d: 0 });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 8;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Receitas: ${formatCurrency(totals.r)}   Despesas: ${formatCurrency(totals.d)}   Lucro: ${formatCurrency(totals.r - totals.d)}`, 14, finalY);
+  }
+
+  if (type === "equipamentos") {
+    const { data } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
+    const rows = (data || []).map((e) => [
+      e.code, e.name, e.category, e.brand || "—", e.year || "—", e.status,
+      e.daily_rate ? `R$ ${Number(e.daily_rate).toFixed(2)}` : "—",
+    ]);
+    autoTable(doc, {
+      startY: 56,
+      head: [["Código", "Nome", "Categoria", "Marca", "Ano", "Status", "Diária"]],
+      body: rows,
+      theme: "striped",
+      headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
+      bodyStyles: { fontSize: 7.5 },
     });
   }
 
   if (type === "clientes") {
-    const { data: clients } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("company_id", companyId)
-      .eq("is_active", true)
-      .order("name");
-
-    const rows = (clients || []).map((c) => [
-      c.name,
-      c.type === "pf" ? "Pessoa Física" : "Pessoa Jurídica",
-      formatDocument(c.document),
-      c.email || "—",
-      c.mobile || c.phone || "—",
-      c.city ? `${c.city}/${c.state}` : "—",
+    const { data } = await supabase.from("clients").select("*").eq("company_id", companyId).order("name");
+    const rows = (data || []).map((c) => [
+      c.name, c.type === "pf" ? "PF" : "PJ", formatDocument(c.document),
+      c.email || "—", c.mobile || c.phone || "—", c.city ? `${c.city}/${c.state}` : "—",
     ]);
-
     autoTable(doc, {
-      startY: 60,
+      startY: 56,
       head: [["Nome", "Tipo", "CPF/CNPJ", "Email", "Telefone", "Cidade/UF"]],
       body: rows,
       theme: "striped",
-      headStyles: { fillColor: [37, 99, 235] },
+      headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
+      bodyStyles: { fontSize: 7.5 },
+    });
+  }
+
+  if (type === "contratos") {
+    const { data } = await supabase
+      .from("contracts")
+      .select("*, clients(name), equipment(name)")
+      .eq("company_id", companyId)
+      .eq("status", "ativo")
+      .order("start_date");
+    const rows = (data || []).map((c: any) => [
+      c.contract_number, c.clients?.name || "—", c.equipment?.name || "—",
+      formatDate(c.start_date), c.end_date ? formatDate(c.end_date) : "Indeterminado",
+      c.monthly_rate ? `R$ ${Number(c.monthly_rate).toFixed(2)}/mês` : c.daily_rate ? `R$ ${Number(c.daily_rate).toFixed(2)}/dia` : "—",
+    ]);
+    autoTable(doc, {
+      startY: 56,
+      head: [["Número", "Cliente", "Equipamento", "Início", "Término", "Valor"]],
+      body: rows,
+      theme: "striped",
+      headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
+      bodyStyles: { fontSize: 7.5 },
+    });
+  }
+
+  if (type === "inadimplencia") {
+    const { data } = await supabase
+      .from("transactions")
+      .select("*, clients(name)")
+      .eq("company_id", companyId)
+      .eq("type", "receita")
+      .in("status", ["pendente", "vencido"])
+      .lt("due_date", new Date().toISOString().split("T")[0])
+      .order("due_date");
+    const rows = (data || []).map((t) => {
+      const days = Math.floor((new Date().getTime() - new Date(t.due_date).getTime()) / 86400000);
+      return [(t as any).clients?.name || "—", t.description, formatDate(t.due_date), `${days} dias`, t.status, `R$ ${Number(t.amount).toFixed(2)}`];
+    });
+    autoTable(doc, {
+      startY: 56,
+      head: [["Cliente", "Descrição", "Vencimento", "Atraso", "Status", "Valor"]],
+      body: rows,
+      theme: "striped",
+      headStyles: { fillColor: [220, 38, 38], fontSize: 8 },
+      bodyStyles: { fontSize: 7.5 },
     });
   }
 
   doc.save(`rentallcontrol-${type}-${new Date().toISOString().split("T")[0]}.pdf`);
 }
 
+// ---- PAGE COMPONENT ----
 export default function RelatoriosPage() {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -247,18 +341,24 @@ export default function RelatoriosPage() {
     return d.toISOString().split("T")[0];
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [generating, setGenerating] = useState<ReportType | null>(null);
+  const [generating, setGenerating] = useState<string | null>(null);
 
-  const { data: companyData } = useQuery({ queryKey: ["companyId"], queryFn: getCompanyId });
+  const { data: companyData } = useQuery({ queryKey: ["companyId"], queryFn: getCompanyData });
 
-  async function handleGenerate(type: ReportType) {
-    if (!companyData?.companyId) return;
-    setGenerating(type);
+  async function handleExport(type: ReportType, format: ExportFormat) {
+    if (!companyData?.companyId) { toast.error("Empresa não encontrada"); return; }
+    const key = `${type}-${format}`;
+    setGenerating(key);
     try {
-      await generateReport(type, companyData.companyId, companyData.companyName || "Empresa", startDate, endDate);
-      toast.success("Relatório gerado com sucesso!");
-    } catch (err) {
-      toast.error("Erro ao gerar relatório");
+      if (format === "excel") {
+        await exportExcel(type, companyData.companyId, companyData.companyName, startDate, endDate);
+      } else {
+        await exportPdf(type, companyData.companyId, companyData.companyName, startDate, endDate);
+      }
+      toast.success(`${format.toUpperCase()} gerado com sucesso!`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao gerar relatório: " + (err.message || ""));
     } finally {
       setGenerating(null);
     }
@@ -266,34 +366,22 @@ export default function RelatoriosPage() {
 
   return (
     <div className="flex flex-col flex-1">
-      <Header title="Relatórios" subtitle="Exporte dados em PDF" />
+      <Header title="Relatórios" subtitle="Exporte dados em PDF ou Excel" />
 
       <div className="flex-1 p-6 space-y-6">
         {/* Date filter */}
-        <div className="flex flex-col sm:flex-row gap-4 p-5 rounded-xl border bg-card">
+        <div className="flex flex-col sm:flex-row gap-4 p-5 rounded-xl border bg-card items-end">
           <div>
             <label className="text-sm font-medium mb-1 block text-muted-foreground">Período Inicial</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="input"
-            />
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input" />
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block text-muted-foreground">Período Final</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="input"
-            />
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input" />
           </div>
-          <div className="flex items-end">
-            <p className="text-sm text-muted-foreground pb-2.5">
-              Os relatórios financeiros usarão este período de referência.
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground pb-2">
+            Período usado nos relatórios financeiros e de inadimplência.
+          </p>
         </div>
 
         {/* Report cards */}
@@ -309,14 +397,26 @@ export default function RelatoriosPage() {
                   <p className="text-sm text-muted-foreground mt-0.5">{report.description}</p>
                 </div>
               </div>
-              <button
-                onClick={() => handleGenerate(report.id)}
-                disabled={generating === report.id}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
-              >
-                <Download className="w-4 h-4" />
-                {generating === report.id ? "Gerando PDF…" : "Exportar PDF"}
-              </button>
+
+              {/* Export buttons */}
+              <div className="flex gap-2 mt-auto">
+                <button
+                  onClick={() => handleExport(report.id, "pdf")}
+                  disabled={!!generating}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 text-red-600 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  {generating === `${report.id}-pdf` ? "Gerando…" : "PDF"}
+                </button>
+                <button
+                  onClick={() => handleExport(report.id, "excel")}
+                  disabled={!!generating}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-green-500/10 text-green-600 text-sm font-medium hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  {generating === `${report.id}-excel` ? "Gerando…" : "Excel"}
+                </button>
+              </div>
             </div>
           ))}
         </div>

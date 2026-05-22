@@ -18,15 +18,58 @@ async function getCompanyId() {
 
 async function fetchCostCenterData(companyId: string) {
   const supabase = createClient();
-  const { data } = await supabase
+
+  // Tenta view primeiro
+  const { data: viewData, error } = await supabase
     .from("equipment_financial_summary")
     .select("*")
     .eq("company_id", companyId)
     .order("net_profit", { ascending: false });
-  return (data || []).map((row: any) => ({
-    ...row,
-    roi: calculateROI(Number(row.total_revenue), Number(row.total_costs)),
-  }));
+
+  if (!error && viewData && viewData.length > 0) {
+    return viewData.map((row: any) => ({
+      ...row,
+      roi: calculateROI(Number(row.total_revenue), Number(row.total_costs)),
+    }));
+  }
+
+  // Fallback manual
+  const { data: equipment } = await supabase
+    .from("equipment")
+    .select("id, name, code, status")
+    .eq("company_id", companyId);
+
+  if (!equipment?.length) return [];
+
+  const { data: transactions } = await supabase
+    .from("transactions")
+    .select("equipment_id, type, amount, status")
+    .eq("company_id", companyId)
+    .eq("status", "pago");
+
+  const { data: contracts } = await supabase
+    .from("contracts")
+    .select("id, equipment_id")
+    .eq("company_id", companyId);
+
+  return equipment.map((eq) => {
+    const txs = (transactions || []).filter((t) => t.equipment_id === eq.id);
+    const total_revenue = txs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
+    const total_costs = txs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+    const net_profit = total_revenue - total_costs;
+    const total_contracts = (contracts || []).filter((c) => c.equipment_id === eq.id).length;
+    return {
+      equipment_id: eq.id,
+      equipment_name: eq.name,
+      code: eq.code,
+      status: eq.status,
+      total_revenue,
+      total_costs,
+      net_profit,
+      total_contracts,
+      roi: calculateROI(total_revenue, total_costs),
+    };
+  }).sort((a, b) => b.net_profit - a.net_profit);
 }
 
 export default function CentroCustoPage() {
@@ -88,22 +131,29 @@ export default function CentroCustoPage() {
         {/* Chart */}
         <div className="rounded-xl border bg-card p-5">
           <h3 className="font-semibold mb-4">Comparativo Financeiro (Top 10)</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
-              <Tooltip
-                formatter={(value: number, name: string) => [formatCurrency(value), name]}
-                contentStyle={{ border: "1px solid hsl(var(--border))", borderRadius: "8px", background: "hsl(var(--card))", fontSize: "12px" }}
-              />
-              <Bar dataKey="receita" name="Receita" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="custo" name="Custo" fill="#ef4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="lucro" name="Lucro" radius={[4, 4, 0, 0]}>
-                {chartData.map((d, i) => <Cell key={i} fill={d.lucro >= 0 ? "#3b82f6" : "#f97316"} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {chartData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              <Wrench className="w-10 h-10 mb-3 opacity-20" />
+              <p className="text-sm">Nenhum dado ainda. Cadastre equipamentos e vincule transações.</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
+                <Tooltip
+                  formatter={(value: number, name: string) => [formatCurrency(value), name]}
+                  contentStyle={{ border: "1px solid hsl(var(--border))", borderRadius: "8px", background: "hsl(var(--card))", fontSize: "12px" }}
+                />
+                <Bar dataKey="receita" name="Receita" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="custo" name="Custo" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="lucro" name="Lucro" radius={[4, 4, 0, 0]}>
+                  {chartData.map((d, i) => <Cell key={i} fill={d.lucro >= 0 ? "#3b82f6" : "#f97316"} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Ranking table */}
@@ -136,9 +186,9 @@ export default function CentroCustoPage() {
                 <th className="w-8">#</th>
                 <th>Equipamento</th>
                 <th>Status</th>
-                <th>Receita Total</th>
-                <th>Custos Totais</th>
-                <th>Lucro Líquido</th>
+                <th>Receita</th>
+                <th>Custos</th>
+                <th>Lucro</th>
                 <th>ROI</th>
                 <th className="hidden lg:table-cell">Contratos</th>
               </tr>
@@ -152,7 +202,7 @@ export default function CentroCustoPage() {
                 <tr>
                   <td colSpan={8} className="text-center py-12 text-muted-foreground">
                     <Wrench className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                    <p>Nenhum dado encontrado</p>
+                    <p>Nenhum equipamento cadastrado</p>
                   </td>
                 </tr>
               ) : (
@@ -174,14 +224,8 @@ export default function CentroCustoPage() {
                       </td>
                       <td className="text-green-600 font-medium tabular-nums">{formatCurrency(Number(item.total_revenue))}</td>
                       <td className="text-red-500 font-medium tabular-nums">{formatCurrency(Number(item.total_costs))}</td>
-                      <td className={`font-bold tabular-nums ${profit >= 0 ? "text-blue-600" : "text-red-500"}`}>
-                        {formatCurrency(profit)}
-                      </td>
-                      <td>
-                        <span className={`font-medium ${item.roi >= 0 ? "text-green-600" : "text-red-500"}`}>
-                          {formatPercent(item.roi)}
-                        </span>
-                      </td>
+                      <td className={`font-bold tabular-nums ${profit >= 0 ? "text-blue-600" : "text-red-500"}`}>{formatCurrency(profit)}</td>
+                      <td><span className={`font-medium ${item.roi >= 0 ? "text-green-600" : "text-red-500"}`}>{formatPercent(item.roi)}</span></td>
                       <td className="hidden lg:table-cell text-muted-foreground">{item.total_contracts}</td>
                     </tr>
                   );
