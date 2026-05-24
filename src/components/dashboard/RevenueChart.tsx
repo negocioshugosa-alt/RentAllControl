@@ -6,22 +6,14 @@ import {
   Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { formatCurrency } from "@/lib/utils";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-async function fetchChartData() {
+async function fetchChartData(companyId: string) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("user_id", user.id)
-    .single();
-
-  if (!profile?.company_id) return [];
+  if (!companyId) return [];
 
   // Buscar últimos 6 meses
   const months = Array.from({ length: 6 }, (_, i) => {
@@ -38,7 +30,7 @@ async function fetchChartData() {
   const { data: transactions } = await supabase
     .from("transactions")
     .select("type, amount, status, paid_date, due_date")
-    .eq("company_id", profile.company_id)
+    .eq("company_id", companyId)
     .gte("due_date", months[0].start)
     .lte("due_date", months[5].end);
 
@@ -88,9 +80,11 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export function RevenueChart() {
+  const { companyId } = useCompanyId();
   const { data = [], isLoading } = useQuery({
-    queryKey: ["revenue-chart"],
-    queryFn: fetchChartData,
+    queryKey: ["revenue-chart", companyId],
+    queryFn: () => fetchChartData(companyId!),
+    enabled: !!companyId,
     staleTime: 1000 * 60 * 5,
   });
 

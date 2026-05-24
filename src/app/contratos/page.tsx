@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, FileText, Pencil, Trash2, Eye, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { ContractForm } from "@/components/contratos/ContractForm";
 import { formatCurrency, formatDate, CONTRACT_STATUS } from "@/lib/utils";
@@ -47,7 +48,7 @@ export default function ContratosPage() {
   const [editItem, setEditItem] = useState<Contract | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: companyId } = useQuery({ queryKey: ["companyId"], queryFn: getCompanyId });
+  const { companyId } = useCompanyId();
 
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ["contratos", companyId, search, statusFilter],

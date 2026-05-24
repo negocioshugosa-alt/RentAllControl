@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck, AlertTriangle, Clock, FileWarning, Filter, Zap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { formatDate, isOverdue, isUpcoming } from "@/lib/utils";
 import { toast } from "sonner";
@@ -53,7 +54,7 @@ export default function AlertasPage() {
   const [filter, setFilter] = useState<"all" | "unread" | "critical">("all");
   const queryClient = useQueryClient();
 
-  const { data: companyId } = useQuery({ queryKey: ["companyId"], queryFn: getCompanyId });
+  const { companyId } = useCompanyId();
 
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ["alertas", companyId],

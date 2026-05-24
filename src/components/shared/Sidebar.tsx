@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Wrench, Users, FileText,
   DollarSign, Bell, BarChart3, PieChart,
-  Settings, LogOut, Zap, Building2,
+  Settings, LogOut, Zap, Building2, Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -27,6 +27,7 @@ const navItems = [
       { href: "/equipamentos", label: "Equipamentos", icon: Wrench },
       { href: "/clientes", label: "Clientes", icon: Users },
       { href: "/contratos", label: "Contratos", icon: FileText },
+      { href: "/fornecedores", label: "Fornecedores", icon: Truck },
     ],
   },
   {

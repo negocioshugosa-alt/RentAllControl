@@ -76,7 +76,7 @@ export default async function DashboardPage() {
           <div className="xl:col-span-2"><RecentTransactions transactions={txs.slice(0, 8) as any} /></div>
           <div><AlertsWidget alerts={(alerts || []) as any} /></div>
         </div>
-        <ProfitByEquipment companyId={companyId} />
+        <ProfitByEquipment />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, DollarSign, TrendingUp, TrendingDown, CheckCircle2, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { TransactionForm } from "@/components/financeiro/TransactionForm";
 import { formatCurrency, formatDate, TRANSACTION_CATEGORIES, isOverdue } from "@/lib/utils";
@@ -70,7 +71,7 @@ export default function FinanceiroPage() {
   const [defaultType, setDefaultType] = useState<"receita" | "despesa">("receita");
   const queryClient = useQueryClient();
 
-  const { data: companyId } = useQuery({ queryKey: ["companyId"], queryFn: getCompanyId });
+  const { companyId } = useCompanyId();
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["financeiro", companyId, type, status, search],

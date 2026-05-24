@@ -269,3 +269,23 @@ export interface QueryParams {
   category?: string;
   type?: string;
 }
+
+// ---- FORNECEDORES ----
+export interface Supplier {
+  id: string;
+  company_id: string;
+  name: string;
+  document?: string;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  category?: string; // tipo de serviço
+  notes?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

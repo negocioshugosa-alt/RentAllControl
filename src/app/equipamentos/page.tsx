@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Filter, Wrench, MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { EquipmentForm } from "@/components/equipamentos/EquipmentForm";
 import { EquipmentDetail } from "@/components/equipamentos/EquipmentDetail";
@@ -26,7 +27,8 @@ async function fetchEquipment(companyId: string, search: string, status: string)
   return data || [];
 }
 
-async function getCompanyId() {
+// getCompanyId replaced by useCompanyId hook
+async function _getCompanyId_UNUSED() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -56,7 +58,7 @@ export default function EquipamentosPage() {
   const [detailItem, setDetailItem] = useState<Equipment | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: companyId } = useQuery({ queryKey: ["companyId"], queryFn: getCompanyId });
+  const { companyId } = useCompanyId();
 
   const { data: equipments = [], isLoading } = useQuery({
     queryKey: ["equipamentos", companyId, search, statusFilter],
