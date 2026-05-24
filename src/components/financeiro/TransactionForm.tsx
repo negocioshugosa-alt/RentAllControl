@@ -75,9 +75,10 @@ function SearchSelect({
   return (
     <div ref={ref} className="relative">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
         <input
-          className="input w-full pl-8 pr-8"
+          className="input w-full"
+          style={{ paddingLeft: "2.5rem", paddingRight: value ? "2.5rem" : "0.75rem" }}
           placeholder={placeholder}
           value={selectedItem ? selectedItem[displayKey] : query}
           onChange={(e) => {
