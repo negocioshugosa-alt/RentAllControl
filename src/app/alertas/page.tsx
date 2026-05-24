@@ -222,7 +222,7 @@ export default function AlertasPage() {
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <Bell className="w-12 h-12 mb-4 opacity-20" />
             <p className="text-lg font-medium">Nenhum alerta</p>
-            <p className="text-sm mt-1">Clique em "Gerar Alertas" para verificar pendências</p>
+            <p className="text-sm mt-1">Clique em Gerar Alertas para verificar pendências</p>
           </div>
         ) : (
           <div className="space-y-2">

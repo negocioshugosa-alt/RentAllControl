@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DashboardLayoutClient } from "@/components/shared/DashboardLayoutClient";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");

@@ -32,6 +32,29 @@ export function formatDocument(doc: string): string {
   return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
 }
 
+export function unformatDocument(doc: string): string {
+  return doc.replace(/\D/g, "");
+}
+
+export function formatCpfCnpj(doc: string, type?: "pf" | "pj"): string {
+  const maxLength = type === "pf" ? 11 : type === "pj" ? 14 : 14;
+  const clean = unformatDocument(doc).slice(0, maxLength);
+  const formatAsCpf = type === "pf" || (!type && clean.length <= 11);
+
+  if (formatAsCpf) {
+    return clean
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+  }
+
+  return clean
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
+}
+
 export function formatPhone(phone: string): string {
   const clean = phone.replace(/\D/g, "");
   if (clean.length === 11) {
