@@ -1,0 +1,209 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 220 15% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 10%;
+    --primary: 215 90% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 95%;
+    --secondary-foreground: 220 15% 20%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 50%;
+    --accent: 215 90% 42%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 72% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 45%;
+    --warning-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 215 90% 42%;
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-bg: 220 20% 8%;
+    --sidebar-fg: 220 10% 85%;
+    --sidebar-muted: 220 10% 45%;
+    --sidebar-accent: 215 90% 42%;
+    --sidebar-border: 220 15% 15%;
+    --sidebar-width: 260px;
+  }
+
+  .dark {
+    --background: 220 20% 7%;
+    --foreground: 220 10% 92%;
+    --card: 220 18% 10%;
+    --card-foreground: 220 10% 92%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 220 10% 92%;
+    --primary: 215 85% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 220 10% 80%;
+    --muted: 220 15% 16%;
+    --muted-foreground: 220 10% 50%;
+    --accent: 215 85% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 65% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 85% 52%;
+    --warning-foreground: 0 0% 100%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 215 85% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
+
+@layer components {
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-width);
+    background: hsl(var(--sidebar-bg));
+    color: hsl(var(--sidebar-fg));
+    border-right: 1px solid hsl(var(--sidebar-border));
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150;
+    color: hsl(var(--sidebar-muted));
+  }
+
+  .sidebar-link:hover {
+    @apply bg-white/5;
+    color: hsl(var(--sidebar-fg));
+  }
+
+  .sidebar-link.active {
+    background: hsl(var(--sidebar-accent) / 0.15);
+    color: hsl(215, 85%, 65%);
+    @apply font-semibold;
+  }
+
+  /* Cards */
+  .metric-card {
+    @apply rounded-xl border bg-card p-5 transition-shadow duration-200 hover:shadow-md;
+  }
+
+  /* Status badges */
+  .badge-disponivel {
+    @apply bg-success/10 text-success border border-success/20;
+  }
+  .badge-alugado {
+    @apply bg-primary/10 text-primary border border-primary/20;
+  }
+  .badge-manutencao {
+    @apply bg-warning/10 text-warning border border-warning/20;
+  }
+  .badge-inativo {
+    @apply bg-muted text-muted-foreground border border-border;
+  }
+  .badge-ativo {
+    @apply bg-success/10 text-success border border-success/20;
+  }
+  .badge-pendente {
+    @apply bg-warning/10 text-warning border border-warning/20;
+  }
+  .badge-pago {
+    @apply bg-success/10 text-success border border-success/20;
+  }
+  .badge-vencido {
+    @apply bg-destructive/10 text-destructive border border-destructive/20;
+  }
+  .badge-encerrado {
+    @apply bg-muted text-muted-foreground border border-border;
+  }
+  .badge-cancelado {
+    @apply bg-destructive/10 text-destructive border border-destructive/20;
+  }
+
+  /* Table */
+  .data-table th {
+    @apply text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 text-left;
+  }
+  .data-table td {
+    @apply px-4 py-3 text-sm;
+  }
+  .data-table tr {
+    @apply border-b border-border transition-colors;
+  }
+  .data-table tbody tr:hover {
+    @apply bg-muted/30;
+  }
+
+  /* Page header */
+  .page-header {
+    @apply flex items-center justify-between mb-6;
+  }
+  .page-title {
+    @apply text-2xl font-bold font-display tracking-tight;
+  }
+  .page-subtitle {
+    @apply text-sm text-muted-foreground mt-0.5;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-muted;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--muted-foreground) / 0.1) 50%, transparent 100%);
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+/* Landing page animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Input utility */
+.input {
+  @apply px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors;
+}
+
+/* Number counters */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

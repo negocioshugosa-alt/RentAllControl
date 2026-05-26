@@ -1,0 +1,1 @@
+/* Append to globals.css – input utility class */
