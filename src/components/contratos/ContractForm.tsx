@@ -159,6 +159,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
         payment_date: isUnica ? null : (data.payment_date || null),
         contract_value: isUnica ? (data.contract_value || null) : null,
         deposit_value: data.deposit_value || null,
+        end_date: data.end_date || null,
       };
 
       let contractId = contract?.id;
