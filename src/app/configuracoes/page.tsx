@@ -2,12 +2,11 @@
 // src/app/configuracoes/page.tsx
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/shared/Header";
-import { formatCpfCnpj, unformatDocument } from "@/lib/utils";
 import { toast } from "sonner";
 import { Building2, Key, User, Save, Eye, EyeOff, Upload, X, ImageIcon } from "lucide-react";
 import Image from "next/image";
@@ -21,15 +20,6 @@ const companySchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zip_code: z.string().optional(),
-}).superRefine((data, ctx) => {
-  const length = unformatDocument(data.cnpj || "").length;
-  if (length > 0 && length !== 14) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["cnpj"],
-      message: "CNPJ deve ter 14 dígitos",
-    });
-  }
 });
 
 const asaasSchema = z.object({
@@ -142,8 +132,7 @@ export default function ConfiguracoesPage() {
   const saveCompany = useMutation({
     mutationFn: async (data: CompanyData) => {
       const supabase = createClient();
-      const payload = { ...data, cnpj: data.cnpj ? unformatDocument(data.cnpj) : null };
-      const { error } = await supabase.from("companies").update(payload).eq("id", company.id);
+      const { error } = await supabase.from("companies").update(data).eq("id", company.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -270,24 +259,7 @@ export default function ConfiguracoesPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">CNPJ</label>
-                    <Controller
-                      name="cnpj"
-                      control={companyForm.control}
-                      render={({ field }) => (
-                        <input
-                          {...field}
-                          className="input w-full font-mono"
-                          inputMode="numeric"
-                          maxLength={18}
-                          placeholder="00.000.000/0000-00"
-                          value={formatCpfCnpj(field.value || "", "pj")}
-                          onChange={(e) => field.onChange(unformatDocument(e.target.value).slice(0, 14))}
-                        />
-                      )}
-                    />
-                    {companyForm.formState.errors.cnpj && (
-                      <p className="text-xs text-destructive mt-1">{companyForm.formState.errors.cnpj.message}</p>
-                    )}
+                    <input {...companyForm.register("cnpj")} className="input w-full font-mono" placeholder="00.000.000/0000-00" />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Email</label>

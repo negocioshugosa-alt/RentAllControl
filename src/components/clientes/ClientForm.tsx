@@ -1,18 +1,17 @@
 "use client";
 // src/components/clientes/ClientForm.tsx
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { formatCpfCnpj, unformatDocument } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Client } from "@/types";
 
 const schema = z.object({
   type: z.enum(["pf", "pj"]),
   name: z.string().min(2, "Nome obrigatório"),
-  document: z.string(),
+  document: z.string().min(11, "CPF/CNPJ obrigatório"),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   mobile: z.string().optional(),
@@ -21,16 +20,6 @@ const schema = z.object({
   state: z.string().max(2).optional(),
   zip_code: z.string().optional(),
   notes: z.string().optional(),
-}).superRefine((data, ctx) => {
-  const length = unformatDocument(data.document).length;
-  const expected = data.type === "pf" ? 11 : 14;
-  if (length !== expected) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["document"],
-      message: data.type === "pf" ? "CPF deve ter 11 dígitos" : "CNPJ deve ter 14 dígitos",
-    });
-  }
 });
 
 type FormData = z.infer<typeof schema>;
@@ -47,7 +36,7 @@ const STATES = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG"
 export function ClientForm({ client, companyId, onClose, onSuccess }: Props) {
   const isEdit = !!client;
 
-  const { register, handleSubmit, watch, control, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       type: client?.type || "pj",
@@ -66,7 +55,7 @@ export function ClientForm({ client, companyId, onClose, onSuccess }: Props) {
 
   async function onSubmit(data: FormData) {
     const supabase = createClient();
-    const payload = { ...data, document: unformatDocument(data.document), company_id: companyId };
+    const payload = { ...data, company_id: companyId };
 
     const { error } = isEdit
       ? await supabase.from("clients").update(payload).eq("id", client!.id)
@@ -104,24 +93,7 @@ export function ClientForm({ client, companyId, onClose, onSuccess }: Props) {
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">{watch("type") === "pf" ? "CPF" : "CNPJ"} *</label>
-              <Controller
-                name="document"
-                control={control}
-                render={({ field }) => {
-                  const type = watch("type");
-                  return (
-                    <input
-                      {...field}
-                      className="input w-full font-mono"
-                      inputMode="numeric"
-                      maxLength={type === "pf" ? 14 : 18}
-                      placeholder={type === "pf" ? "000.000.000-00" : "00.000.000/0000-00"}
-                      value={formatCpfCnpj(field.value || "", type)}
-                      onChange={(e) => field.onChange(unformatDocument(e.target.value).slice(0, type === "pf" ? 11 : 14))}
-                    />
-                  );
-                }}
-              />
+              <input {...register("document")} className="input w-full font-mono" placeholder={watch("type") === "pf" ? "000.000.000-00" : "00.000.000/0000-00"} />
               {errors.document && <p className="text-xs text-destructive mt-1">{errors.document.message}</p>}
             </div>
             <div>

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DashboardLayoutClient } from "./DashboardLayoutClient";
 
 export async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");

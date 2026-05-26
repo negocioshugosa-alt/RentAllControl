@@ -1,10 +1,9 @@
 "use client";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { formatCpfCnpj, unformatDocument } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Supplier } from "@/types";
 
@@ -27,15 +26,6 @@ const schema = z.object({
   state: z.string().optional(),
   zip_code: z.string().optional(),
   notes: z.string().optional(),
-}).superRefine((data, ctx) => {
-  const length = unformatDocument(data.document || "").length;
-  if (length > 0 && length !== 11 && length !== 14) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["document"],
-      message: "Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos",
-    });
-  }
 });
 
 type FormData = z.infer<typeof schema>;
@@ -50,7 +40,7 @@ interface Props {
 export function SupplierForm({ supplier, companyId, onClose, onSuccess }: Props) {
   const isEdit = !!supplier;
 
-  const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: supplier?.name || "",
@@ -69,7 +59,7 @@ export function SupplierForm({ supplier, companyId, onClose, onSuccess }: Props)
 
   async function onSubmit(data: FormData) {
     const supabase = createClient();
-    const payload = { ...data, document: data.document ? unformatDocument(data.document) : null, company_id: companyId, is_active: true };
+    const payload = { ...data, company_id: companyId, is_active: true };
 
     const { error } = isEdit
       ? await supabase.from("suppliers").update(payload).eq("id", supplier!.id)
@@ -100,22 +90,7 @@ export function SupplierForm({ supplier, companyId, onClose, onSuccess }: Props)
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">CPF / CNPJ</label>
-              <Controller
-                name="document"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    className="input w-full font-mono"
-                    inputMode="numeric"
-                    maxLength={18}
-                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                    value={formatCpfCnpj(field.value || "")}
-                    onChange={(e) => field.onChange(unformatDocument(e.target.value).slice(0, 14))}
-                  />
-                )}
-              />
-              {errors.document && <p className="text-xs text-destructive mt-1">{errors.document.message}</p>}
+              <input {...register("document")} className="input w-full font-mono" placeholder="00.000.000/0000-00" />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Categoria</label>

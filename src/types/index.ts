@@ -110,7 +110,7 @@ export interface Client {
 
 // ---- CONTRATOS ----
 export type ContractStatus = "ativo" | "encerrado" | "cancelado" | "pendente";
-export type PaymentFrequency = "diario" | "semanal" | "quinzenal" | "mensal";
+export type PaymentFrequency = "diario" | "semanal" | "quinzenal" | "mensal" | "unica";
 
 export interface Contract {
   id: string;
@@ -126,6 +126,8 @@ export interface Contract {
   payment_frequency: PaymentFrequency;
   payment_day?: number;
   deposit_value?: number;
+  contract_value?: number;
+  file_url?: string;
   deposit_paid?: boolean;
   notes?: string;
   file_url?: string;

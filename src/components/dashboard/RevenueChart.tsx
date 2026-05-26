@@ -31,18 +31,25 @@ async function fetchChartData(companyId: string) {
     .from("transactions")
     .select("type, amount, status, paid_date, due_date")
     .eq("company_id", companyId)
-    .neq("status", "cancelado");
+    .gte("due_date", months[0].start)
+    .lte("due_date", months[5].end);
 
   return months.map((m) => {
-    const txs = (transactions || []).filter((t) => {
-      const date = t.status === "pago" && t.paid_date ? t.paid_date : t.due_date;
-      return date >= m.start && date <= m.end;
-    });
+    const txs = (transactions || []).filter((t) =>
+      t.due_date >= m.start && t.due_date <= m.end
+    );
+    const revenue = txs
+      .filter((t) => t.type === "receita" && t.status === "pago")
+      .reduce((s, t) => s + Number(t.amount), 0);
+    const expenses = txs
+      .filter((t) => t.type === "despesa" && t.status === "pago")
+      .reduce((s, t) => s + Number(t.amount), 0);
+    // Também incluir pendentes/vencidos para ter visão completa
     const revenueTotal = txs
-      .filter((t) => t.type === "receita")
+      .filter((t) => t.type === "receita" && t.status !== "cancelado")
       .reduce((s, t) => s + Number(t.amount), 0);
     const expensesTotal = txs
-      .filter((t) => t.type === "despesa")
+      .filter((t) => t.type === "despesa" && t.status !== "cancelado")
       .reduce((s, t) => s + Number(t.amount), 0);
 
     return {

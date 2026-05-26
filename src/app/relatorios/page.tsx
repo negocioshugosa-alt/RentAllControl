@@ -20,7 +20,7 @@ const reports = [
 ];
 
 async function exportExcel(type: ReportType, companyId: string, companyName: string, start: string, end: string) {
-  const ExcelJS = await import("exceljs");
+  const XLSX = await import("xlsx");
   const supabase = createClient();
   let rows: any[] = [];
   let sheetName = "Relatório";
@@ -91,41 +91,20 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     });
   }
 
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet(sheetName);
-  const headers = Object.keys(rows[0] || {});
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = Object.keys(rows[0] || {}).map((h) => ({ wch: Math.max(h.length + 2, 15) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-  if (headers.length) {
-    ws.columns = headers.map((header) => ({
-      header,
-      key: header,
-      width: Math.max(header.length + 2, 15),
-    }));
-    ws.addRows(rows);
-    ws.getRow(1).font = { bold: true };
-  }
-
-  const wsInfo = wb.addWorksheet("Informações");
-  wsInfo.addRows([
+  const wsInfo = XLSX.utils.aoa_to_sheet([
     ["RentAllControl — " + reports.find((r) => r.id === type)?.title],
     ["Empresa:", companyName],
     ["Período:", `${formatDate(start)} a ${formatDate(end)}`],
     ["Gerado em:", formatDate(new Date())],
     ["Total de registros:", rows.length],
   ]);
-  wsInfo.getColumn(1).width = 24;
-  wsInfo.getColumn(2).width = 36;
-
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `rentallcontrol-${type}-${new Date().toISOString().split("T")[0]}.xlsx`;
-  link.click();
-  URL.revokeObjectURL(url);
+  XLSX.utils.book_append_sheet(wb, wsInfo, "Informações");
+  XLSX.writeFile(wb, `rentallcontrol-${type}-${new Date().toISOString().split("T")[0]}.xlsx`);
 }
 
 async function exportPdf(type: ReportType, companyId: string, companyName: string, start: string, end: string) {

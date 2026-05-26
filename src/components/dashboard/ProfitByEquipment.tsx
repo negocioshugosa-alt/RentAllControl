@@ -18,32 +18,13 @@ async function fetchProfitData(companyId: string) {
 
   const { data: transactions } = await supabase
     .from("transactions")
-    .select("equipment_id, contract_id, type, amount, status")
+    .select("equipment_id, type, amount, status")
     .eq("company_id", companyId)
     .eq("status", "pago");
 
-  const contractIds = Array.from(new Set((transactions || [])
-    .map((t) => t.contract_id)
-    .filter(Boolean)));
-
-  const { data: contracts } = contractIds.length
-    ? await supabase
-      .from("contracts")
-      .select("id, equipment_id")
-      .in("id", contractIds)
-    : { data: [] };
-
-  const equipmentByContract = new Map((contracts || []).map((contract) => [
-    contract.id,
-    contract.equipment_id,
-  ]));
-
   return equipment
     .map((eq) => {
-      const txs = (transactions || []).filter((t) => {
-        const equipmentId = t.equipment_id || (t.contract_id ? equipmentByContract.get(t.contract_id) : null);
-        return equipmentId === eq.id;
-      });
+      const txs = (transactions || []).filter((t) => t.equipment_id === eq.id);
       const revenue = txs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
       const costs = txs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
       return {

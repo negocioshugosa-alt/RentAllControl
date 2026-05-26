@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/shared/Header";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
-import { EquipmentStatus } from "@/components/dashboard/EquipmentStatus";
+import { EquipmentProfitStatus } from "@/components/dashboard/EquipmentProfitStatus";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { ProfitByEquipment } from "@/components/dashboard/ProfitByEquipment";
@@ -12,7 +12,7 @@ import { formatDate } from "@/lib/utils";
 export const metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
         <MetricCards metrics={metrics} />
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2"><RevenueChart /></div>
-          <div><EquipmentStatus metrics={metrics} /></div>
+          <div><EquipmentProfitStatus /></div>
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2"><RecentTransactions transactions={txs.slice(0, 8) as any} /></div>
