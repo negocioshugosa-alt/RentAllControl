@@ -156,7 +156,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
         daily_rate: isUnica ? null : (data.daily_rate || null),
         monthly_rate: isUnica ? null : (data.monthly_rate || null),
         payment_day: null,
-        payment_date: isUnica ? null : (data.payment_date || null),
+        payment_date: data.payment_date || null,
         contract_value: isUnica ? (data.contract_value || null) : null,
         deposit_value: data.deposit_value || null,
         end_date: data.end_date || null,
@@ -211,9 +211,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
       }
 
       // Calculate due date based on payment_date, falling back to start_date
-      const dueDate = (data.payment_frequency !== "unica" && data.payment_date)
-        ? data.payment_date
-        : data.start_date;
+      const dueDate = data.payment_date || data.start_date;
 
       // Handle receivable transaction
       const { data: existingTx } = await supabase
@@ -221,7 +219,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
         .select("id, status")
         .eq("contract_id", contractId!)
         .eq("type", "receita")
-        .eq("status", "pendente")
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -366,6 +364,16 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
                 </select>
               </div>
 
+              {/* Data de Pagamento */}
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium mb-1 block">Data de Pagamento</label>
+                <input
+                  {...register("payment_date")}
+                  type="date"
+                  className="input w-full"
+                />
+              </div>
+
               {/* Pagamento único */}
               {isUnica && (
                 <div className="sm:col-span-2">
@@ -433,14 +441,6 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
                           onValueChange={(vals) => field.onChange(vals.floatValue ?? null)}
                         />
                       )}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Data de Pagamento</label>
-                    <input
-                      {...register("payment_date")}
-                      type="date"
-                      className="input w-full"
                     />
                   </div>
                 </>
