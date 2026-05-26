@@ -54,7 +54,7 @@ export default function ClientesPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      queryClient.invalidateQueries();
       router.refresh();
       toast.success("Cliente removido");
     },
@@ -174,7 +174,7 @@ export default function ClientesPage() {
           companyId={companyId!}
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["clientes"] });
+            queryClient.invalidateQueries();
             router.refresh();
             setShowForm(false);
           }}

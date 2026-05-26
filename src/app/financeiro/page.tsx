@@ -91,7 +91,7 @@ export default function FinanceiroPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["financeiro"] });
+      queryClient.invalidateQueries();
       router.refresh();
       toast.success("Lançamento marcado como pago!");
     },
@@ -104,7 +104,7 @@ export default function FinanceiroPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["financeiro"] });
+      queryClient.invalidateQueries();
       router.refresh();
       toast.success("Lançamento removido");
     },
@@ -301,7 +301,7 @@ export default function FinanceiroPage() {
           defaultType={defaultType}
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["financeiro"] });
+            queryClient.invalidateQueries();
             router.refresh();
             setShowForm(false);
           }}

@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/shared/Header";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { formatCurrency, formatPercent, calculateROI } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { TrendingUp, TrendingDown, Trophy, DollarSign, Wrench } from "lucide-react";
 
 async function fetchCostCenterData(companyId: string) {
@@ -77,13 +76,6 @@ export default function CentroCustoPage() {
   const totalCosts = items.reduce((s, i) => s + i.total_costs, 0);
   const totalProfit = items.reduce((s, i) => s + i.net_profit, 0);
 
-  const chartData = sorted.slice(0, 10).map((i) => ({
-    name: i.equipment_name?.split(" ").slice(0, 2).join(" ") || i.code,
-    lucro: i.net_profit,
-    receita: i.total_revenue,
-    custo: i.total_costs,
-  }));
-
   const loading = isLoading || loadingCompany;
 
   return (
@@ -113,42 +105,12 @@ export default function CentroCustoPage() {
           ))}
         </div>
 
-        {/* Chart */}
-        <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-4">Comparativo Financeiro por Equipamento</h3>
-          {loading ? (
-            <div className="skeleton h-64 w-full rounded-lg" />
-          ) : chartData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-              <Wrench className="w-10 h-10 mb-3 opacity-20" />
-              <p className="text-sm">Nenhum equipamento cadastrado ainda.</p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="35%">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
-                <Tooltip
-                  formatter={(v: number, n: string) => [formatCurrency(v), n]}
-                  contentStyle={{ border: "1px solid hsl(var(--border))", borderRadius: "8px", background: "hsl(var(--card))", fontSize: "12px" }}
-                />
-                <Bar dataKey="receita" name="Receita" fill="#22c55e" radius={[4, 4, 0, 0]} maxBarSize={70} />
-                <Bar dataKey="custo" name="Custo" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={70} />
-                <Bar dataKey="lucro" name="Lucro" radius={[4, 4, 0, 0]} maxBarSize={70}>
-                  {chartData.map((d, i) => <Cell key={i} fill={d.lucro >= 0 ? "#3b82f6" : "#f97316"} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* Ranking */}
+        {/* Table */}
         <div className="rounded-xl border bg-card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b">
             <div className="flex items-center gap-2">
               <Trophy className="w-4 h-4 text-yellow-500" />
-              <h3 className="font-semibold">Ranking de Lucratividade</h3>
+              <h3 className="font-semibold">Lucratividade por Equipamento</h3>
             </div>
             <div className="flex gap-1">
               {[

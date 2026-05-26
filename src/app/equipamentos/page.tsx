@@ -75,7 +75,7 @@ export default function EquipamentosPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["equipamentos"] });
+      queryClient.invalidateQueries();
       router.refresh();
       toast.success("Equipamento removido");
     },
@@ -240,7 +240,7 @@ export default function EquipamentosPage() {
           companyId={companyId!}
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["equipamentos"] });
+            queryClient.invalidateQueries();
             router.refresh();
             setShowForm(false);
           }}

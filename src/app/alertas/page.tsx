@@ -68,7 +68,7 @@ export default function AlertasPage() {
       await supabase.from("alerts").update({ is_read: true }).in("id", ids);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alertas"] });
+      queryClient.invalidateQueries();
       toast.success("Alertas marcados como lidos");
     },
   });
@@ -151,7 +151,7 @@ export default function AlertasPage() {
       return newAlerts.length;
     },
     onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ["alertas"] });
+      queryClient.invalidateQueries();
       toast.success(`${count} alertas gerados!`);
     },
     onError: () => toast.error("Erro ao gerar alertas"),

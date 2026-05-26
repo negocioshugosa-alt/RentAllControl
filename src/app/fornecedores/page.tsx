@@ -49,7 +49,7 @@ export default function FornecedoresPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+      queryClient.invalidateQueries();
       router.refresh();
       toast.success("Fornecedor removido");
     },
@@ -177,7 +177,7 @@ export default function FornecedoresPage() {
           companyId={companyId}
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+            queryClient.invalidateQueries();
             router.refresh();
             setShowForm(false);
           }}
