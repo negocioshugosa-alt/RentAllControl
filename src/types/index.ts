@@ -125,6 +125,7 @@ export interface Contract {
   monthly_rate?: number;
   payment_frequency: PaymentFrequency;
   payment_day?: number;
+  payment_date?: string;
   deposit_value?: number;
   deposit_paid?: boolean;
   contract_value?: number;
@@ -155,6 +156,7 @@ export type TransactionCategory =
   | "marketing"
   | "escritorio"
   | "financiamento"
+  | "impostos"
   | "outros";
 
 export interface Transaction {

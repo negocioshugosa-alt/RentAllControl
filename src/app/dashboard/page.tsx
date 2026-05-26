@@ -39,10 +39,11 @@ export default async function DashboardPage() {
   ]);
 
   const txs = transactions || [];
+  const todayStr = new Date().toISOString().split("T")[0];
   const monthRevenue = txs.filter((t) => t.type === "receita" && t.status === "pago" && t.paid_date >= monthStart).reduce((s, t) => s + Number(t.amount), 0);
   const monthExpenses = txs.filter((t) => t.type === "despesa" && t.status === "pago" && t.paid_date >= monthStart).reduce((s, t) => s + Number(t.amount), 0);
-  const overdueReceivables = txs.filter((t) => t.type === "receita" && t.status === "vencido").reduce((s, t) => s + Number(t.amount), 0);
-  const overduePayables = txs.filter((t) => t.type === "despesa" && t.status === "vencido").reduce((s, t) => s + Number(t.amount), 0);
+  const overdueReceivables = txs.filter((t) => t.type === "receita" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
+  const overduePayables = txs.filter((t) => t.type === "despesa" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
 
   const eq = equipment || [];
   const rented = eq.filter((e) => e.status === "alugado").length;

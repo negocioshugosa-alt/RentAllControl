@@ -137,6 +137,7 @@ export const TRANSACTION_CATEGORIES = [
   { value: "marketing", label: "Marketing" },
   { value: "escritorio", label: "Escritório" },
   { value: "financiamento", label: "Financiamento" },
+  { value: "impostos", label: "Impostos" },
   { value: "outros", label: "Outros" },
 ] as const;
 

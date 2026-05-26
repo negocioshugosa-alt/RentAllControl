@@ -23,6 +23,7 @@ const schema = z.object({
   monthly_rate: z.number().optional().nullable(),
   payment_frequency: z.enum(["diario", "semanal", "quinzenal", "mensal", "unica"]),
   payment_day: z.number().min(1).max(31).optional().nullable(),
+  payment_date: z.string().optional().nullable(),
   contract_value: z.number().optional().nullable(),
   deposit_value: z.number().optional().nullable(),
   deposit_paid: z.boolean().default(false),
@@ -94,7 +95,8 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
       daily_rate: contract?.daily_rate ? Number(contract.daily_rate) : null,
       monthly_rate: contract?.monthly_rate ? Number(contract.monthly_rate) : null,
       payment_frequency: contract?.payment_frequency || "mensal",
-      payment_day: contract?.payment_day || 5,
+      payment_day: contract?.payment_day || null,
+      payment_date: contract?.payment_date || "",
       contract_value: contract?.contract_value ? Number(contract.contract_value) : null,
       deposit_value: contract?.deposit_value ? Number(contract.deposit_value) : null,
       deposit_paid: contract?.deposit_paid || false,
@@ -153,7 +155,8 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
         company_id: companyId,
         daily_rate: isUnica ? null : (data.daily_rate || null),
         monthly_rate: isUnica ? null : (data.monthly_rate || null),
-        payment_day: isUnica ? null : (data.payment_day || null),
+        payment_day: null,
+        payment_date: isUnica ? null : (data.payment_date || null),
         contract_value: isUnica ? (data.contract_value || null) : null,
         deposit_value: data.deposit_value || null,
       };
@@ -190,6 +193,67 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
           .from("equipment")
           .update({ status: "alugado" })
           .eq("id", data.equipment_id);
+      }
+
+      // Calculate transaction amount
+      let amount = 0;
+      if (data.payment_frequency === "unica") {
+        amount = data.contract_value || 0;
+      } else if (data.payment_frequency === "mensal") {
+        amount = data.monthly_rate || (data.daily_rate ? data.daily_rate * 30 : 0);
+      } else if (data.payment_frequency === "quinzenal") {
+        amount = data.daily_rate ? data.daily_rate * 15 : (data.monthly_rate ? data.monthly_rate / 2 : 0);
+      } else if (data.payment_frequency === "semanal") {
+        amount = data.daily_rate ? data.daily_rate * 7 : (data.monthly_rate ? data.monthly_rate / 4 : 0);
+      } else if (data.payment_frequency === "diario") {
+        amount = data.daily_rate || (data.monthly_rate ? data.monthly_rate / 30 : 0);
+      }
+
+      // Calculate due date based on payment_date, falling back to start_date
+      const dueDate = (data.payment_frequency !== "unica" && data.payment_date)
+        ? data.payment_date
+        : data.start_date;
+
+      // Handle receivable transaction
+      const { data: existingTx } = await supabase
+        .from("transactions")
+        .select("id, status")
+        .eq("contract_id", contractId!)
+        .eq("type", "receita")
+        .eq("status", "pendente")
+        .limit(1)
+        .maybeSingle();
+
+      const txPayload = {
+        company_id: companyId,
+        type: "receita",
+        category: "aluguel",
+        description: `Aluguel - Contrato nº ${data.contract_number}`,
+        amount,
+        due_date: dueDate,
+        client_id: data.client_id,
+        equipment_id: data.equipment_id,
+        contract_id: contractId,
+      };
+
+      if (existingTx) {
+        await supabase
+          .from("transactions")
+          .update(txPayload)
+          .eq("id", existingTx.id);
+      } else {
+        await supabase
+          .from("transactions")
+          .insert(txPayload);
+      }
+
+      // Auto-cancel pending transactions only if the contract is canceled
+      if (data.status === "cancelado") {
+        await supabase
+          .from("transactions")
+          .update({ status: "cancelado" })
+          .eq("contract_id", contractId!)
+          .eq("status", "pendente");
       }
 
       toast.success(isEdit ? "Contrato atualizado!" : "Contrato criado!");
@@ -371,14 +435,11 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Dia de Pagamento</label>
+                    <label className="text-sm font-medium mb-1 block">Data de Pagamento</label>
                     <input
-                      {...register("payment_day", { valueAsNumber: true })}
-                      type="number"
-                      min={1}
-                      max={31}
+                      {...register("payment_date")}
+                      type="date"
                       className="input w-full"
-                      placeholder="5"
                     />
                   </div>
                 </>

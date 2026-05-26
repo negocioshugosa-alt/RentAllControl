@@ -41,14 +41,38 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     }));
   }
   if (type === "equipamentos") {
-    const { data } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
+    const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
+    const { data: transactions } = await supabase.from("transactions").select("equipment_id, contract_id, type, amount").eq("company_id", companyId).eq("status", "pago").gte("due_date", start).lte("due_date", end);
+    const { data: contracts } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
+    
+    const eqMap = new Map((contracts || []).map((c) => [c.id, c.equipment_id]));
+    const list = equipments || [];
+
     sheetName = "Equipamentos";
-    rows = (data || []).map((e) => ({
-      Código: e.code, Nome: e.name, Categoria: e.category,
-      Marca: e.brand || "—", Modelo: e.model || "—", Ano: e.year || "—", Status: e.status,
-      "Diária (R$)": e.daily_rate ? Number(e.daily_rate) : 0,
-      "Mensalidade (R$)": e.monthly_rate ? Number(e.monthly_rate) : 0,
-    }));
+    rows = list.map((e) => {
+      const txs = (transactions || []).filter((t) => {
+        const eqId = t.equipment_id || (t.contract_id ? eqMap.get(t.contract_id) : null);
+        return eqId === e.id;
+      });
+      const revenue = txs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
+      const costs = txs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+      const profit = revenue - costs;
+      const roi = costs > 0 ? (profit / costs) * 100 : 0;
+      
+      return {
+        Código: e.code,
+        Nome: e.name,
+        Categoria: e.category,
+        Marca: e.brand || "—",
+        Modelo: e.model || "—",
+        Ano: e.year || "—",
+        Status: e.status,
+        "Total Receitas (R$)": revenue,
+        "Total Custos (R$)": costs,
+        "Lucro Líquido (R$)": profit,
+        "ROI (%)": Number(roi.toFixed(1)),
+      };
+    });
   }
   if (type === "clientes") {
     const { data } = await supabase.from("clients").select("*").eq("company_id", companyId).order("name");
@@ -172,10 +196,40 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
     doc.text(`Receitas: ${formatCurrency(totals.r)}   Despesas: ${formatCurrency(totals.d)}   Lucro: ${formatCurrency(totals.r - totals.d)}`, 14, fy);
   }
   if (type === "equipamentos") {
-    const { data } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
-    autoTable(doc, { startY: 56, head: [["Código", "Nome", "Categoria", "Marca", "Ano", "Status", "Diária"]],
-      body: (data || []).map((e) => [e.code, e.name, e.category, e.brand || "—", e.year || "—", e.status, e.daily_rate ? `R$ ${Number(e.daily_rate).toFixed(2)}` : "—"]),
-      theme: "striped", headStyles: { fillColor: [37, 99, 235], fontSize: 8 }, bodyStyles: { fontSize: 7.5 },
+    const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
+    const { data: transactions } = await supabase.from("transactions").select("equipment_id, contract_id, type, amount").eq("company_id", companyId).eq("status", "pago").gte("due_date", start).lte("due_date", end);
+    const { data: contracts } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
+    
+    const eqMap = new Map((contracts || []).map((c) => [c.id, c.equipment_id]));
+    const list = equipments || [];
+
+    autoTable(doc, {
+      startY: 56,
+      head: [["Código", "Nome", "Categoria", "Status", "Receitas", "Custos", "Lucro", "ROI"]],
+      body: list.map((e) => {
+        const txs = (transactions || []).filter((t) => {
+          const eqId = t.equipment_id || (t.contract_id ? eqMap.get(t.contract_id) : null);
+          return eqId === e.id;
+        });
+        const revenue = txs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
+        const costs = txs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+        const profit = revenue - costs;
+        const roi = costs > 0 ? (profit / costs) * 100 : 0;
+
+        return [
+          e.code,
+          e.name,
+          e.category,
+          e.status,
+          `R$ ${revenue.toFixed(2)}`,
+          `R$ ${costs.toFixed(2)}`,
+          `R$ ${profit.toFixed(2)}`,
+          `${roi.toFixed(1)}%`
+        ];
+      }),
+      theme: "striped",
+      headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
+      bodyStyles: { fontSize: 7.5 },
     });
   }
   if (type === "clientes") {
