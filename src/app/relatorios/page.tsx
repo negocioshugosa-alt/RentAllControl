@@ -45,18 +45,27 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
   let rows: any[] = [];
   let sheetName = "Relatório";
 
+  const statusLabels: Record<string, string> = {
+    pago: "Pago",
+    pendente: "Pendente",
+    vencido: "Vencido",
+    cancelado: "Cancelado"
+  };
+
   if (type === "financeiro") {
     const { data } = await supabase
-      .from("transactions").select("*, clients(name), equipment(name)")
+      .from("transactions").select("*, clients(name), suppliers(name), equipment(name)")
       .eq("company_id", companyId).gte("due_date", start).lte("due_date", end).order("due_date");
     sheetName = "Financeiro";
     rows = (data || []).map((t) => ({
       Data: formatDate(t.due_date),
       Tipo: t.type === "receita" ? "Receita" : "Despesa",
       Descrição: t.description,
-      Categoria: t.category,
-      Cliente: (t as any).clients?.name || "—",
-      Status: t.status,
+      Categoria: categoryLabels[t.category] || t.category,
+      "Cliente/Fornecedor": t.type === "receita"
+        ? ((t as any).clients?.name || "—")
+        : ((t as any).suppliers?.name || "—"),
+      Status: statusLabels[t.status] || t.status,
       "Valor (R$)": Number(t.amount),
     }));
   }
@@ -64,7 +73,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     // Fetch full transaction details for block-per-equipment format
     const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
     const { data: transactions } = await supabase.from("transactions")
-      .select("equipment_id, contract_id, type, category, description, status, amount, client_id, clients(name), contracts(contract_number)")
+      .select("equipment_id, contract_id, type, category, description, status, amount, client_id, supplier_id, clients(name), suppliers(name), contracts(contract_number)")
       .eq("company_id", companyId).neq("status", "cancelado").gte("due_date", start).lte("due_date", end);
     const { data: contractsList } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
 
@@ -99,9 +108,11 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
           "Tipo": tx.type === "receita" ? "Receita" : "Despesa",
           "Descrição": tx.description || "—",
           "Categoria": categoryLabels[tx.category] || tx.category,
-          "Cliente/Fornecedor": (tx as any).clients?.name || "—",
+          "Cliente/Fornecedor": tx.type === "receita"
+            ? ((tx as any).clients?.name || "—")
+            : ((tx as any).suppliers?.name || "—"),
           "Contrato": (tx as any).contracts?.contract_number || "—",
-          "Status": tx.status,
+          "Status": statusLabels[tx.status] || tx.status,
           "Valor (R$)": Number(tx.amount),
         });
         // Color-code type column
@@ -225,7 +236,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
       return {
         Cliente: (t as any).clients?.name || "—", Descrição: t.description,
         Vencimento: formatDate(t.due_date), "Dias em Atraso": days,
-        Status: t.status, "Valor (R$)": Number(t.amount),
+        Status: statusLabels[t.status] || t.status, "Valor (R$)": Number(t.amount),
       };
     });
   }
@@ -274,6 +285,13 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
   const doc = new jsPDF();
   const W = doc.internal.pageSize.getWidth();
 
+  const statusLabels: Record<string, string> = {
+    pago: "Pago",
+    pendente: "Pendente",
+    vencido: "Vencido",
+    cancelado: "Cancelado"
+  };
+
   doc.setFillColor(37, 99, 235);
   doc.rect(0, 0, W, 28, "F");
   doc.setTextColor(255, 255, 255);
@@ -293,15 +311,15 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
   doc.text(`Gerado em ${formatDate(new Date())} | Período: ${formatDate(start)} a ${formatDate(end)}`, 14, 49);
 
   if (type === "financeiro") {
-    const { data } = await supabase.from("transactions").select("*, clients(name)")
+    const { data } = await supabase.from("transactions").select("*, clients(name), suppliers(name)")
       .eq("company_id", companyId).gte("due_date", start).lte("due_date", end).order("due_date");
     autoTable(doc, {
       startY: 56,
-      head: [["Data", "Tipo", "Descrição", "Cliente", "Status", "Valor"]],
+      head: [["Data", "Tipo", "Descrição", "Cliente/Fornecedor", "Status", "Valor"]],
       body: (data || []).map((t) => [
         formatDate(t.due_date), t.type === "receita" ? "Receita" : "Despesa",
-        t.description.substring(0, 40), (t as any).clients?.name || "—",
-        t.status, `R$ ${Number(t.amount).toFixed(2)}`,
+        t.description.substring(0, 40), t.type === "receita" ? ((t as any).clients?.name || "—") : ((t as any).suppliers?.name || "—"),
+        statusLabels[t.status] || t.status, `R$ ${Number(t.amount).toFixed(2)}`,
       ]),
       theme: "striped", headStyles: { fillColor: [37, 99, 235], fontSize: 8 }, bodyStyles: { fontSize: 7.5 },
     });
@@ -313,7 +331,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
   if (type === "equipamentos") {
     const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
     const { data: transactions } = await supabase.from("transactions")
-      .select("equipment_id, contract_id, type, category, description, status, amount, client_id, clients(name), contracts(contract_number)")
+      .select("equipment_id, contract_id, type, category, description, status, amount, client_id, supplier_id, clients(name), suppliers(name), contracts(contract_number)")
       .eq("company_id", companyId).neq("status", "cancelado").gte("due_date", start).lte("due_date", end);
     const { data: contracts } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
     
@@ -322,13 +340,6 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
 
     const pageHeight = doc.internal.pageSize.getHeight();
     let currentY = 56;
-
-    const statusLabels: Record<string, string> = {
-      pago: "Pago",
-      pendente: "Pendente",
-      vencido: "Vencido",
-      cancelado: "Cancelado"
-    };
 
     for (const eq of list) {
       const txs = (transactions || []).filter((t) => {
@@ -375,7 +386,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
           tx.type === "receita" ? "Receita" : "Despesa",
           tx.description || "—",
           categoryLabels[tx.category] || tx.category,
-          (tx as any).clients?.name || "—",
+          tx.type === "receita" ? ((tx as any).clients?.name || "—") : ((tx as any).suppliers?.name || "—"),
           (tx as any).contracts?.contract_number || "—",
           statusLabels[tx.status] || tx.status,
           formatCurrency(Number(tx.amount))
