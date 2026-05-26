@@ -55,10 +55,19 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
   if (type === "financeiro") {
     const { data } = await supabase
       .from("transactions").select("*, clients(name), suppliers(name), equipment(name)")
-      .eq("company_id", companyId).gte("due_date", start).lte("due_date", end).order("due_date");
+      .eq("company_id", companyId).neq("status", "cancelado");
+
+    const filteredTxs = (data || [])
+      .map((t) => ({
+        ...t,
+        txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+      }))
+      .filter((t) => t.txDate >= start && t.txDate <= end)
+      .sort((a, b) => a.txDate.localeCompare(b.txDate));
+
     sheetName = "Financeiro";
-    rows = (data || []).map((t) => ({
-      Data: formatDate(t.due_date),
+    rows = filteredTxs.map((t) => ({
+      Data: formatDate(t.txDate),
       Tipo: t.type === "receita" ? "Receita" : "Despesa",
       Descrição: t.description,
       Categoria: categoryLabels[t.category] || t.category,
@@ -73,13 +82,19 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     // Fetch full transaction details for block-per-equipment format
     const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
     const { data: transactions } = await supabase.from("transactions")
-      .select("equipment_id, contract_id, type, category, description, status, amount, client_id, supplier_id, clients(name), suppliers(name), contracts(contract_number)")
-      .eq("company_id", companyId).neq("status", "cancelado").gte("due_date", start).lte("due_date", end);
+      .select("equipment_id, contract_id, type, category, description, status, amount, client_id, supplier_id, due_date, paid_date, clients(name), suppliers(name), contracts(contract_number)")
+      .eq("company_id", companyId).neq("status", "cancelado");
     const { data: contractsList } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
 
     const eqMap = new Map((contractsList || []).map((c) => [c.id, c.equipment_id]));
     const list = equipments || [];
     sheetName = "Equipamentos";
+
+    // Map and filter transactions by calculated date
+    const mappedTxs = (transactions || []).map((t) => ({
+      ...t,
+      txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+    })).filter((t) => t.txDate >= start && t.txDate <= end);
 
     const eqWb = new ExcelJS.Workbook();
     const eqWs = eqWb.addWorksheet(sheetName);
@@ -93,7 +108,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     let totalEquipments = 0;
 
     for (const eq of list) {
-      const txs = (transactions || []).filter((t) => {
+      const txs = mappedTxs.filter((t) => {
         const eqId = t.equipment_id || (t.contract_id ? eqMap.get(t.contract_id) : null);
         return eqId === eq.id;
       });
@@ -312,18 +327,27 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
 
   if (type === "financeiro") {
     const { data } = await supabase.from("transactions").select("*, clients(name), suppliers(name)")
-      .eq("company_id", companyId).gte("due_date", start).lte("due_date", end).order("due_date");
+      .eq("company_id", companyId).neq("status", "cancelado");
+
+    const filteredTxs = (data || [])
+      .map((t) => ({
+        ...t,
+        txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+      }))
+      .filter((t) => t.txDate >= start && t.txDate <= end)
+      .sort((a, b) => a.txDate.localeCompare(b.txDate));
+
     autoTable(doc, {
       startY: 56,
       head: [["Data", "Tipo", "Descrição", "Cliente/Fornecedor", "Status", "Valor"]],
-      body: (data || []).map((t) => [
-        formatDate(t.due_date), t.type === "receita" ? "Receita" : "Despesa",
+      body: filteredTxs.map((t) => [
+        formatDate(t.txDate), t.type === "receita" ? "Receita" : "Despesa",
         t.description.substring(0, 40), t.type === "receita" ? ((t as any).clients?.name || "—") : ((t as any).suppliers?.name || "—"),
         statusLabels[t.status] || t.status, `R$ ${Number(t.amount).toFixed(2)}`,
       ]),
       theme: "striped", headStyles: { fillColor: [37, 99, 235], fontSize: 8 }, bodyStyles: { fontSize: 7.5 },
     });
-    const totals = (data || []).reduce((a, t) => { t.type === "receita" ? a.r += Number(t.amount) : a.d += Number(t.amount); return a; }, { r: 0, d: 0 });
+    const totals = filteredTxs.reduce((a, t) => { t.type === "receita" ? a.r += Number(t.amount) : a.d += Number(t.amount); return a; }, { r: 0, d: 0 });
     const fy = (doc as any).lastAutoTable.finalY + 8;
     doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
     doc.text(`Receitas: ${formatCurrency(totals.r)}   Despesas: ${formatCurrency(totals.d)}   Lucro: ${formatCurrency(totals.r - totals.d)}`, 14, fy);
@@ -331,8 +355,8 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
   if (type === "equipamentos") {
     const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
     const { data: transactions } = await supabase.from("transactions")
-      .select("equipment_id, contract_id, type, category, description, status, amount, client_id, supplier_id, clients(name), suppliers(name), contracts(contract_number)")
-      .eq("company_id", companyId).neq("status", "cancelado").gte("due_date", start).lte("due_date", end);
+      .select("equipment_id, contract_id, type, category, description, status, amount, client_id, supplier_id, due_date, paid_date, clients(name), suppliers(name), contracts(contract_number)")
+      .eq("company_id", companyId).neq("status", "cancelado");
     const { data: contracts } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
     
     const eqMap = new Map((contracts || []).map((c) => [c.id, c.equipment_id]));
@@ -341,8 +365,13 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
     const pageHeight = doc.internal.pageSize.getHeight();
     let currentY = 56;
 
+    const mappedTxs = (transactions || []).map((t) => ({
+      ...t,
+      txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+    })).filter((t) => t.txDate >= start && t.txDate <= end);
+
     for (const eq of list) {
-      const txs = (transactions || []).filter((t) => {
+      const txs = mappedTxs.filter((t) => {
         const eqId = t.equipment_id || (t.contract_id ? eqMap.get(t.contract_id) : null);
         return eqId === eq.id;
       });
