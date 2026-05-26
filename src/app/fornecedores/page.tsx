@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Truck, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -33,6 +34,7 @@ export default function FornecedoresPage() {
   const [editItem, setEditItem] = useState<Supplier | null>(null);
   const queryClient = useQueryClient();
   const { companyId } = useCompanyId();
+  const router = useRouter();
 
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ["fornecedores", companyId, search],
@@ -48,6 +50,7 @@ export default function FornecedoresPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+      router.refresh();
       toast.success("Fornecedor removido");
     },
     onError: () => toast.error("Erro ao remover fornecedor"),
@@ -175,6 +178,7 @@ export default function FornecedoresPage() {
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+            router.refresh();
             setShowForm(false);
           }}
         />

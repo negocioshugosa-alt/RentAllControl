@@ -1,6 +1,7 @@
 // src/app/equipamentos/page.tsx
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Filter, Wrench, MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -57,6 +58,7 @@ export default function EquipamentosPage() {
   const [editItem, setEditItem] = useState<Equipment | null>(null);
   const [detailItem, setDetailItem] = useState<Equipment | null>(null);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { companyId } = useCompanyId();
 
@@ -74,6 +76,7 @@ export default function EquipamentosPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["equipamentos"] });
+      router.refresh();
       toast.success("Equipamento removido");
     },
     onError: () => toast.error("Erro ao remover equipamento"),
@@ -238,6 +241,7 @@ export default function EquipamentosPage() {
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["equipamentos"] });
+            router.refresh();
             setShowForm(false);
           }}
         />

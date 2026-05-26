@@ -19,6 +19,26 @@ const reports = [
   { id: "inadimplencia" as ReportType, title: "Inadimplência", description: "Clientes e contas com pagamentos em atraso", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-500/10" },
 ];
 
+const categoryLabels: Record<string, string> = {
+  aluguel: "Aluguel",
+  caucao: "Caução",
+  multa_contrato: "Multa",
+  combustivel: "Combustível",
+  manutencao: "Manutenção",
+  pneus: "Pneus",
+  pecas: "Peças",
+  seguro: "Seguro",
+  ipva: "IPVA",
+  lavagem: "Lavagem",
+  multas: "Multas",
+  salarios: "Salários",
+  marketing: "Marketing",
+  escritorio: "Escritório",
+  financiamento: "Financiamento",
+  impostos: "Impostos",
+  outros: "Outros"
+};
+
 async function exportExcel(type: ReportType, companyId: string, companyName: string, start: string, end: string) {
   const ExcelJS = await import("exceljs");
   const supabase = createClient();
@@ -42,7 +62,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
   }
   if (type === "equipamentos") {
     const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
-    const { data: transactions } = await supabase.from("transactions").select("equipment_id, contract_id, type, amount").eq("company_id", companyId).eq("status", "pago").gte("due_date", start).lte("due_date", end);
+    const { data: transactions } = await supabase.from("transactions").select("equipment_id, contract_id, type, category, amount").eq("company_id", companyId).neq("status", "cancelado").gte("due_date", start).lte("due_date", end);
     const { data: contracts } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
     
     const eqMap = new Map((contracts || []).map((c) => [c.id, c.equipment_id]));
@@ -54,10 +74,31 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
         const eqId = t.equipment_id || (t.contract_id ? eqMap.get(t.contract_id) : null);
         return eqId === e.id;
       });
-      const revenue = txs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
-      const costs = txs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+
+      const revMap: Record<string, number> = {};
+      txs.filter((t) => t.type === "receita").forEach((t) => {
+        const catLabel = categoryLabels[t.category] || t.category;
+        revMap[catLabel] = (revMap[catLabel] || 0) + Number(t.amount);
+      });
+
+      const costMap: Record<string, number> = {};
+      txs.filter((t) => t.type === "despesa").forEach((t) => {
+        const catLabel = categoryLabels[t.category] || t.category;
+        costMap[catLabel] = (costMap[catLabel] || 0) + Number(t.amount);
+      });
+
+      const revenue = Object.values(revMap).reduce((s, v) => s + v, 0);
+      const costs = Object.values(costMap).reduce((s, v) => s + v, 0);
       const profit = revenue - costs;
       const roi = costs > 0 ? (profit / costs) * 100 : 0;
+
+      const revDetails = Object.entries(revMap)
+        .map(([cat, val]) => `${cat}: R$ ${val.toFixed(2)}`)
+        .join(" | ") || "Nenhuma";
+
+      const costDetails = Object.entries(costMap)
+        .map(([cat, val]) => `${cat}: R$ ${val.toFixed(2)}`)
+        .join(" | ") || "Nenhum";
       
       return {
         Código: e.code,
@@ -68,7 +109,9 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
         Ano: e.year || "—",
         Status: e.status,
         "Total Receitas (R$)": revenue,
+        "Detalhamento Receitas": revDetails,
         "Total Custos (R$)": costs,
+        "Detalhamento Custos": costDetails,
         "Lucro Líquido (R$)": profit,
         "ROI (%)": Number(roi.toFixed(1)),
       };
@@ -197,7 +240,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
   }
   if (type === "equipamentos") {
     const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
-    const { data: transactions } = await supabase.from("transactions").select("equipment_id, contract_id, type, amount").eq("company_id", companyId).eq("status", "pago").gte("due_date", start).lte("due_date", end);
+    const { data: transactions } = await supabase.from("transactions").select("equipment_id, contract_id, type, category, amount").eq("company_id", companyId).neq("status", "cancelado").gte("due_date", start).lte("due_date", end);
     const { data: contracts } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
     
     const eqMap = new Map((contracts || []).map((c) => [c.id, c.equipment_id]));
@@ -205,31 +248,52 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
 
     autoTable(doc, {
       startY: 56,
-      head: [["Código", "Nome", "Categoria", "Status", "Receitas", "Custos", "Lucro", "ROI"]],
+      head: [["Código", "Nome", "Categoria", "Status", "Receitas (Detalhamento)", "Custos (Detalhamento)", "Lucro", "ROI"]],
       body: list.map((e) => {
         const txs = (transactions || []).filter((t) => {
           const eqId = t.equipment_id || (t.contract_id ? eqMap.get(t.contract_id) : null);
           return eqId === e.id;
         });
-        const revenue = txs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
-        const costs = txs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+
+        const revMap: Record<string, number> = {};
+        txs.filter((t) => t.type === "receita").forEach((t) => {
+          const catLabel = categoryLabels[t.category] || t.category;
+          revMap[catLabel] = (revMap[catLabel] || 0) + Number(t.amount);
+        });
+
+        const costMap: Record<string, number> = {};
+        txs.filter((t) => t.type === "despesa").forEach((t) => {
+          const catLabel = categoryLabels[t.category] || t.category;
+          costMap[catLabel] = (costMap[catLabel] || 0) + Number(t.amount);
+        });
+
+        const revenue = Object.values(revMap).reduce((s, v) => s + v, 0);
+        const costs = Object.values(costMap).reduce((s, v) => s + v, 0);
         const profit = revenue - costs;
         const roi = costs > 0 ? (profit / costs) * 100 : 0;
+
+        const revCell = `R$ ${revenue.toFixed(2)}` + (Object.keys(revMap).length > 0
+          ? "\n" + Object.entries(revMap).map(([c, v]) => `${c}: R$ ${v.toFixed(0)}`).join("\n")
+          : "");
+
+        const costCell = `R$ ${costs.toFixed(2)}` + (Object.keys(costMap).length > 0
+          ? "\n" + Object.entries(costMap).map(([c, v]) => `${c}: R$ ${v.toFixed(0)}`).join("\n")
+          : "");
 
         return [
           e.code,
           e.name,
           e.category,
           e.status,
-          `R$ ${revenue.toFixed(2)}`,
-          `R$ ${costs.toFixed(2)}`,
+          revCell,
+          costCell,
           `R$ ${profit.toFixed(2)}`,
           `${roi.toFixed(1)}%`
         ];
       }),
       theme: "striped",
       headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
-      bodyStyles: { fontSize: 7.5 },
+      bodyStyles: { fontSize: 7.5, valign: "top" },
     });
   }
   if (type === "clientes") {

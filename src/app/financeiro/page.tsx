@@ -1,6 +1,7 @@
 "use client";
 // src/app/financeiro/page.tsx
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, DollarSign, TrendingUp, TrendingDown, CheckCircle2, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -70,6 +71,7 @@ export default function FinanceiroPage() {
   const [editItem, setEditItem] = useState<Transaction | null>(null);
   const [defaultType, setDefaultType] = useState<"receita" | "despesa">("receita");
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { companyId } = useCompanyId();
 
@@ -90,6 +92,7 @@ export default function FinanceiroPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["financeiro"] });
+      router.refresh();
       toast.success("Lançamento marcado como pago!");
     },
   });
@@ -102,6 +105,7 @@ export default function FinanceiroPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["financeiro"] });
+      router.refresh();
       toast.success("Lançamento removido");
     },
   });
@@ -298,6 +302,7 @@ export default function FinanceiroPage() {
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["financeiro"] });
+            router.refresh();
             setShowForm(false);
           }}
         />

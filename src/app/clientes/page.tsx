@@ -1,6 +1,7 @@
 "use client";
 // src/app/clientes/page.tsx
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Users, Eye, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -36,6 +37,7 @@ export default function ClientesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Client | null>(null);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { companyId } = useCompanyId();
 
@@ -53,6 +55,7 @@ export default function ClientesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      router.refresh();
       toast.success("Cliente removido");
     },
     onError: () => toast.error("Erro ao remover cliente"),
@@ -172,6 +175,7 @@ export default function ClientesPage() {
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["clientes"] });
+            router.refresh();
             setShowForm(false);
           }}
         />

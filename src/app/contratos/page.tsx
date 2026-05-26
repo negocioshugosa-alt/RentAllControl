@@ -1,6 +1,7 @@
 "use client";
 // src/app/contratos/page.tsx
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, FileText, Pencil, Trash2, Eye, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -47,6 +48,7 @@ export default function ContratosPage() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Contract | null>(null);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { companyId } = useCompanyId();
 
@@ -64,6 +66,7 @@ export default function ContratosPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contratos"] });
+      router.refresh();
       toast.success("Contrato atualizado");
     },
   });
@@ -208,6 +211,7 @@ export default function ContratosPage() {
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["contratos"] });
+            router.refresh();
             setShowForm(false);
           }}
         />
