@@ -1,6 +1,6 @@
 "use client";
 // src/app/login/page.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,6 +20,17 @@ type FormData = z.infer<typeof schema>;
 export default function LoginPage() {
   const [showPwd, setShowPwd] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("error") === "account_deactivated") {
+        toast.error(
+          "Acesso negado: Sua conta foi temporariamente desativada devido às limitações de usuários do plano da empresa."
+        );
+      }
+    }
+  }, []);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -51,7 +62,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-display font-bold text-xl">RentAllControl</span>
+            <span className="font-display font-bold text-xl">RentFlow</span>
           </div>
           <h1 className="font-display font-bold text-4xl leading-tight mb-4">
             Gestão completa<br />para sua locadora
@@ -88,7 +99,7 @@ export default function LoginPage() {
             <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-bold text-lg">RentAllControl</span>
+            <span className="font-display font-bold text-lg">RentFlow</span>
           </div>
 
           <h2 className="text-2xl font-bold font-display mb-1">Bem-vindo de volta</h2>

@@ -10,12 +10,15 @@ import { EQUIPMENT_CATEGORIES, EQUIPMENT_STATUS, generateEquipmentCode } from "@
 import { toast } from "sonner";
 import type { Equipment } from "@/types";
 
+import { useSubscription } from "@/hooks/useSubscription";
+
 const schema = z.object({
   // Obrigatórios
   code: z.string().min(1, "Código obrigatório"),
   name: z.string().min(2, "Nome obrigatório"),
   category: z.string().min(1, "Categoria obrigatória"),
-  status: z.enum(["disponivel", "alugado", "manutencao", "inativo"]),
+  status: z.enum(["disponivel", "alugado", "manutencao", "inativo", "vendido"]),
+  quantity: z.number().min(1, "Quantidade mínima é 1"),
   // Opcionais identificação
   brand: z.string().optional(),
   model: z.string().optional(),
@@ -73,7 +76,7 @@ function CurrencyInput({ name, control, label }: { name: any; control: any; labe
 
 export function EquipmentForm({ equipment, companyId, onClose, onSuccess }: Props) {
   const isEdit = !!equipment;
-
+  const { isReadOnly } = useSubscription();
   const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -88,6 +91,7 @@ export function EquipmentForm({ equipment, companyId, onClose, onSuccess }: Prop
       hourimeter: equipment?.hourimeter ? Number(equipment.hourimeter) : null,
       km: equipment?.km ? Number(equipment.km) : null,
       status: equipment?.status || "disponivel",
+      quantity: equipment?.quantity || 1,
       purchase_value: equipment?.purchase_value ? Number(equipment.purchase_value) : null,
       financing_value: equipment?.financing_value ? Number(equipment.financing_value) : null,
       monthly_installment: equipment?.monthly_installment ? Number(equipment.monthly_installment) : null,
@@ -101,7 +105,34 @@ export function EquipmentForm({ equipment, companyId, onClose, onSuccess }: Prop
   });
 
   async function onSubmit(data: FormData) {
+    if (isReadOnly) {
+      toast.error("O período de testes expirou. Ative sua assinatura para realizar cadastros.");
+      return;
+    }
+
     const supabase = createClient();
+
+    // Validação de limite de equipamentos para plano Essencial
+    if (!isEdit) {
+      const { data: company } = await supabase
+        .from("companies")
+        .select("subscription_plan")
+        .eq("id", companyId)
+        .single();
+
+      if (company?.subscription_plan === "essencial") {
+        const { count } = await supabase
+          .from("equipment")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId);
+
+        if ((count || 0) >= 50) {
+          toast.error("Limite atingido: Seu plano Essencial permite até 50 equipamentos registrados. Faça o upgrade para o Plano Pro para itens ilimitados.");
+          return;
+        }
+      }
+    }
+
     // Remove nulls to avoid DB issues
     const payload = Object.fromEntries(
       Object.entries({ ...data, company_id: companyId }).filter(([_, v]) => v !== null && v !== "")
@@ -160,6 +191,17 @@ export function EquipmentForm({ equipment, companyId, onClose, onSuccess }: Prop
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Quantidade Total *</label>
+                <input
+                  {...register("quantity", { valueAsNumber: true })}
+                  type="number"
+                  className="input w-full"
+                  placeholder="1"
+                  min="1"
+                />
+                {errors.quantity && <p className="text-xs text-destructive mt-1">{errors.quantity.message}</p>}
               </div>
               <div className="sm:col-span-2">
                 <label className="text-sm font-medium mb-1 block">Nome / Descrição *</label>
@@ -319,7 +361,7 @@ export function EquipmentForm({ equipment, companyId, onClose, onSuccess }: Prop
           </button>
           <button
             onClick={handleSubmit(onSubmit)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isReadOnly}
             className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             {isSubmitting ? "Salvando…" : isEdit ? "Salvar Alterações" : "Cadastrar Equipamento"}

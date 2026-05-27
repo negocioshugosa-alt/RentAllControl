@@ -9,8 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/shared/Header";
 import { formatCpfCnpj, unformatDocument } from "@/lib/utils";
 import { toast } from "sonner";
-import { Building2, Key, User, Save, Eye, EyeOff, Upload, X, ImageIcon } from "lucide-react";
+import { Building2, Key, User, Save, Eye, EyeOff, Upload, X, ImageIcon, CreditCard, Users } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 const companySchema = z.object({
   name: z.string().min(2, "Nome obrigatório"),
@@ -167,9 +168,11 @@ export default function ConfiguracoesPage() {
   });
 
   const tabs = [
-    { id: "empresa", label: "Empresa", icon: Building2 },
-    { id: "integracao", label: "Integração Asaas", icon: Key },
-    { id: "perfil", label: "Meu Perfil", icon: User },
+    { id: "empresa", label: "Empresa", icon: Building2, href: null },
+    { id: "integracao", label: "Integração Asaas", icon: Key, href: null },
+    { id: "perfil", label: "Meu Perfil", icon: User, href: null },
+    { id: "assinatura", label: "Plano / Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" },
+    { id: "equipe", label: "Minha Equipe", icon: Users, href: "/configuracoes/equipe" },
   ] as const;
 
   const STATES = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
@@ -180,22 +183,32 @@ export default function ConfiguracoesPage() {
 
       <div className="flex-1 p-6 space-y-6 max-w-3xl">
         {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab.id ? "bg-card shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit flex-wrap">
+          {tabs.map((tab) => {
+            const className = `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === tab.id ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`;
+            if (tab.href) {
+              return (
+                <Link key={tab.id} href={tab.href} className={className}>
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </Link>
+              );
+            }
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={className}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Empresa */}
         {activeTab === "empresa" && (
           <div className="space-y-4">
             {/* Logo Upload */}

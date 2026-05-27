@@ -71,6 +71,58 @@ export default function EquipamentosPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id, companies(*)")
+        .eq("user_id", user.id)
+        .single();
+
+      const company = (profile as any)?.companies;
+      if (company?.subscription_status === "past_due") {
+        throw new Error("Acesso suspenso: Identificamos uma pendência financeira em sua assinatura.");
+      }
+      if (
+        company?.subscription_status === "trialing" &&
+        company?.subscription_trial_ends_at &&
+        new Date(company.subscription_trial_ends_at) < new Date()
+      ) {
+        throw new Error("Trial expirado: Seu período de testes terminou. Ative sua assinatura para remover dados.");
+      }
+
+      const { data: equipment } = await supabase
+        .from("equipment")
+        .select("status")
+        .eq("id", id)
+        .single();
+
+      // Caso o equipamento já tenha sido marcado como vendido, permite a exclusão mesmo que existam lançamentos
+      // associados (contratos ou transações). Essa regra adicional garante que a venda finalize o ciclo do
+      // equipamento sem impedir a remoção dos registros históricos.
+      if (equipment?.status === "vendido") {
+        const { error } = await supabase.from("equipment").delete().eq("id", id);
+        if (error) throw error;
+        return;
+      }
+
+      const { count: contractCount } = await supabase
+        .from("contracts")
+        .select("*", { count: "exact", head: true })
+        .eq("equipment_id", id);
+
+      const { count: transactionCount } = await supabase
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("equipment_id", id);
+
+      if ((contractCount || 0) > 0 || (transactionCount || 0) > 0) {
+        throw new Error(
+          "Este equipamento possui contratos ou lançamentos financeiros vinculados e não pode ser excluído. Mude o status do equipamento para 'Vendido' antes de excluí-lo."
+        );
+      }
+
       const { error } = await supabase.from("equipment").delete().eq("id", id);
       if (error) throw error;
     },
@@ -79,7 +131,7 @@ export default function EquipamentosPage() {
       router.refresh();
       toast.success("Equipamento removido");
     },
-    onError: () => toast.error("Erro ao remover equipamento"),
+    onError: (error: any) => toast.error(error.message || "Erro ao remover equipamento"),
   });
 
   return (

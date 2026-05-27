@@ -11,6 +11,7 @@ export interface Profile {
   role: UserRole;
   avatar_url?: string;
   phone?: string;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -30,10 +31,16 @@ export interface Company {
   asaas_wallet_id?: string;
   created_at: string;
   updated_at: string;
+  subscription_plan?: "essencial" | "pro";
+  subscription_status?: "trialing" | "active" | "past_due" | "canceled";
+  subscription_trial_ends_at?: string;
+  asaas_customer_id?: string;
+  asaas_subscription_id?: string;
+  subscription_expires_at?: string;
 }
 
 // ---- EQUIPAMENTOS ----
-export type EquipmentStatus = "disponivel" | "alugado" | "manutencao" | "inativo";
+export type EquipmentStatus = "disponivel" | "alugado" | "manutencao" | "inativo" | "vendido";
 export type EquipmentCategory =
   | "caminhao"
   | "maquina_pesada"
@@ -67,7 +74,7 @@ export interface Equipment {
   depreciation_rate?: number;
   daily_rate?: number;
   monthly_rate?: number;
-  // Imagens
+  quantity?: number;
   image_url?: string;
   notes?: string;
   created_at: string;
@@ -129,6 +136,7 @@ export interface Contract {
   deposit_value?: number;
   deposit_paid?: boolean;
   contract_value?: number;
+  rented_quantity?: number;
   notes?: string;
   file_url?: string;
   client?: Client;

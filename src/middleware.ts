@@ -5,7 +5,14 @@ import { createServerClient } from "@supabase/ssr";
 const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
+  let supabaseResponse = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,7 +24,11 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -27,7 +38,7 @@ export async function middleware(request: NextRequest) {
   );
 
   const { pathname } = request.nextUrl;
-  const isPublic = PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/api/");
+  const isPublic = PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/api/") || pathname.startsWith("/invite/");
 
   const { data: { user } } = await supabase.auth.getUser();
 

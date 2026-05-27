@@ -157,6 +157,7 @@ export const EQUIPMENT_STATUS = [
   { value: "alugado", label: "Alugado", color: "primary" },
   { value: "manutencao", label: "Manutenção", color: "warning" },
   { value: "inativo", label: "Inativo", color: "muted" },
+  { value: "vendido", label: "Vendido", color: "destructive" },
 ] as const;
 
 export const CONTRACT_STATUS = [

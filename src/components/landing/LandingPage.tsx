@@ -15,37 +15,28 @@ const features = [
 
 const plans = [
   {
-    name: "Starter",
-    price: "R$ 149",
+    name: "Essencial",
+    price: "R$ 149,90",
     period: "/mês",
-    desc: "Ideal para pequenas locadoras",
-    features: ["Até 20 equipamentos", "5 usuários", "Contratos ilimitados", "Relatórios PDF", "Suporte por email"],
+    desc: "Ideal para pequenos locadores",
+    features: ["Até 50 equipamentos no total", "1 usuário (sem equipe)", "Contratos ilimitados", "Controle financeiro básico", "Suporte por e-mail"],
     highlight: false,
     cta: "Começar grátis",
   },
   {
     name: "Pro",
-    price: "R$ 299",
+    price: "R$ 299,90",
     period: "/mês",
-    desc: "Para locadoras em crescimento",
-    features: ["Até 100 equipamentos", "15 usuários", "Integração Asaas", "API de webhooks", "Suporte prioritário", "Multi-filiais"],
+    desc: "Para locadoras em crescimento e equipes",
+    features: ["Equipamentos ilimitados", "Usuários de equipe ilimitados", "Alertas inteligentes e automáticos", "Centro de custos e ROI por ativo", "Relatórios avançados (PDF/Excel)", "Suporte prioritário via WhatsApp"],
     highlight: true,
     cta: "Começar grátis",
-  },
-  {
-    name: "Enterprise",
-    price: "Sob consulta",
-    period: "",
-    desc: "Para grandes operações",
-    features: ["Equipamentos ilimitados", "Usuários ilimitados", "Onboarding dedicado", "SLA garantido", "Integrações customizadas"],
-    highlight: false,
-    cta: "Falar com vendas",
-  },
+  }
 ];
 
 const faqs = [
-  { q: "Preciso instalar algo?", a: "Não. O RentAllControl é 100% online. Acesse de qualquer dispositivo com um navegador." },
-  { q: "Como funciona o período gratuito?", a: "14 dias grátis sem precisar de cartão de crédito. Explore todas as funcionalidades sem compromisso." },
+  { q: "Preciso instalar algo?", a: "Não. O RentFlow é 100% online. Acesse de qualquer dispositivo com um navegador." },
+  { q: "Como funciona o período gratuito?", a: "30 dias grátis sem precisar de cartão de crédito. Explore todas as funcionalidades sem compromisso." },
   { q: "Os meus dados são seguros?", a: "Sim. Utilizamos Supabase com PostgreSQL, criptografia em trânsito e em repouso, e backups automáticos diários." },
   { q: "Posso integrar com meu gateway de pagamento?", a: "Sim. Integramos nativamente com a Asaas para emissão de PIX, boleto e cartão de crédito com baixa automática." },
   { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade, sem multa. Cancele quando precisar e exporte seus dados a qualquer momento." },
@@ -77,7 +68,7 @@ export function LandingPage() {
             <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-bold">RentAllControl</span>
+            <span className="font-display font-bold">RentFlow</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Funcionalidades</a>
@@ -123,7 +114,7 @@ export function LandingPage() {
               href="/register"
               className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors"
             >
-              Começar 14 dias grátis
+              Começar 30 dias grátis
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
@@ -148,7 +139,7 @@ export function LandingPage() {
               </div>
               <div className="flex-1 mx-4">
                 <div className="bg-background rounded-md px-3 py-1 text-xs text-muted-foreground font-mono max-w-sm">
-                  app.rentallcontrol.com.br/dashboard
+                  app.rentflow.com.br/dashboard
                 </div>
               </div>
             </div>
@@ -208,7 +199,7 @@ export function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">Tudo que sua locadora precisa</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Do controle operacional à análise financeira, o RentAllControl centraliza toda a gestão da sua empresa.
+              Do controle operacional à análise financeira, o RentFlow centraliza toda a gestão da sua empresa.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -246,7 +237,7 @@ export function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">Planos simples e transparentes</h2>
-            <p className="text-muted-foreground">14 dias grátis em todos os planos. Sem cartão de crédito.</p>
+            <p className="text-muted-foreground">30 dias grátis em todos os planos. Sem cartão de crédito.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {plans.map((plan) => (
@@ -311,7 +302,7 @@ export function LandingPage() {
             Comece a lucrar mais com sua locadora hoje
           </h2>
           <p className="text-white/60 mb-8">
-            14 dias grátis, configuração em minutos, sem complicações.
+            30 dias grátis, configuração em minutos, sem complicações.
           </p>
           <Link
             href="/register"
@@ -330,10 +321,10 @@ export function LandingPage() {
             <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center">
               <Zap className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="font-display font-bold text-sm">RentAllControl</span>
+            <span className="font-display font-bold text-sm">RentFlow</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} RentAllControl. Todos os direitos reservados.
+            © {new Date().getFullYear()} RentFlow. Todos os direitos reservados.
           </p>
           <div className="flex gap-4 text-sm text-muted-foreground">
             <Link href="#" className="hover:text-foreground">Termos</Link>

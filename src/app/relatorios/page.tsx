@@ -195,7 +195,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     // Info sheet
     const eqInfo = eqWb.addWorksheet("Informações");
     eqInfo.addRows([
-      ["RentAllControl — Relatório por Equipamento"],
+      ["RentFlow — Relatório por Equipamento"],
       ["Empresa:", companyName],
       ["Período:", `${formatDate(start)} a ${formatDate(end)}`],
       ["Gerado em:", formatDate(new Date())],
@@ -212,7 +212,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     const eqUrl = URL.createObjectURL(eqBlob);
     const eqLink = document.createElement("a");
     eqLink.href = eqUrl;
-    eqLink.download = `rentallcontrol-equipamentos-${new Date().toISOString().split("T")[0]}.xlsx`;
+    eqLink.download = `rentflow-equipamentos-${new Date().toISOString().split("T")[0]}.xlsx`;
     eqLink.click();
     URL.revokeObjectURL(eqUrl);
     return; // Early return — custom workbook already downloaded
@@ -323,7 +323,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
 
     const eqInfo = eqWb.addWorksheet("Informações");
     eqInfo.addRows([
-      ["RentAllControl — Resumo por Equipamento"],
+      ["RentFlow — Resumo por Equipamento"],
       ["Empresa:", companyName],
       ["Período:", `${formatDate(start)} a ${formatDate(end)}`],
       ["Gerado em:", formatDate(new Date())],
@@ -338,7 +338,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     const eqUrl = URL.createObjectURL(eqBlob);
     const eqLink = document.createElement("a");
     eqLink.href = eqUrl;
-    eqLink.download = `rentallcontrol-resumo-equipamentos-${new Date().toISOString().split("T")[0]}.xlsx`;
+    eqLink.download = `rentflow-resumo-equipamentos-${new Date().toISOString().split("T")[0]}.xlsx`;
     eqLink.click();
     URL.revokeObjectURL(eqUrl);
     return;
@@ -381,7 +381,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     kpiWs.views = [{ showGridLines: true }];
 
     kpiWs.mergeCells("A1:D1");
-    kpiWs.getCell("A1").value = "RentAllControl — Diagnóstico de Saúde da Empresa";
+    kpiWs.getCell("A1").value = "RentFlow — Diagnóstico de Saúde da Empresa";
     kpiWs.getCell("A1").font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
     kpiWs.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F766E" } };
     kpiWs.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
@@ -490,7 +490,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     const kpiUrl = URL.createObjectURL(kpiBlob);
     const kpiLink = document.createElement("a");
     kpiLink.href = kpiUrl;
-    kpiLink.download = `rentallcontrol-saude-empresa-${new Date().toISOString().split("T")[0]}.xlsx`;
+    kpiLink.download = `rentflow-saude-empresa-${new Date().toISOString().split("T")[0]}.xlsx`;
     kpiLink.click();
     URL.revokeObjectURL(kpiUrl);
     return;
@@ -552,7 +552,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
 
   const wsInfo = wb.addWorksheet("Informações");
   wsInfo.addRows([
-    ["RentAllControl — " + reports.find((r) => r.id === type)?.title],
+    ["RentFlow — " + reports.find((r) => r.id === type)?.title],
     ["Empresa:", companyName],
     ["Período:", `${formatDate(start)} a ${formatDate(end)}`],
     ["Gerado em:", formatDate(new Date())],
@@ -568,7 +568,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `rentallcontrol-${type}-${new Date().toISOString().split("T")[0]}.xlsx`;
+  link.download = `rentflow-${type}-${new Date().toISOString().split("T")[0]}.xlsx`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -592,7 +592,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text("RentAllControl", 14, 13);
+  doc.text("RentFlow", 14, 13);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text(companyName, W - 14, 13, { align: "right" });
@@ -971,7 +971,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
     doc.text(`Página ${i} de ${pageCount}`, W - 14, H - 8, { align: "right" });
   }
 
-  doc.save(`rentallcontrol-${type}-${new Date().toISOString().split("T")[0]}.pdf`);
+  doc.save(`rentflow-${type}-${new Date().toISOString().split("T")[0]}.pdf`);
 }
 
 export default function RelatoriosPage() {

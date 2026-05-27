@@ -10,7 +10,7 @@ async function fetchCompanyContext() {
   if (!user) return null;
   const { data, error } = await supabase
     .from("profiles")
-    .select("company_id, name, role, companies(name, logo_url)")
+    .select("company_id, name, role, companies(*)")
     .eq("user_id", user.id)
     .single();
   if (error || !data) return null;
@@ -20,6 +20,7 @@ async function fetchCompanyContext() {
     userName: data.name as string,
     userRole: data.role as string,
     logoUrl: (data as any).companies?.logo_url as string | null,
+    company: (data as any).companies as any,
   };
 }
 

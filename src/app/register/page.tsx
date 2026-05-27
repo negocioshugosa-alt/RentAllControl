@@ -58,13 +58,13 @@ export default function RegisterPage() {
           <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-display font-bold text-xl">RentAllControl</span>
+          <span className="font-display font-bold text-xl">RentFlow</span>
         </div>
 
         <div className="bg-card rounded-2xl border shadow-sm p-8">
           <h1 className="text-2xl font-bold font-display mb-1">Criar conta grátis</h1>
           <p className="text-muted-foreground text-sm mb-6">
-            14 dias grátis, sem cartão de crédito
+            30 dias grátis, sem cartão de crédito
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

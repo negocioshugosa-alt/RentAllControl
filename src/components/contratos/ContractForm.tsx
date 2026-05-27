@@ -11,11 +11,14 @@ import { createClient } from "@/lib/supabase/client";
 import { generateContractNumber } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Contract } from "@/types";
+import { updateEquipmentStatus } from "@/services/equipment";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const schema = z.object({
   contract_number: z.string().min(1),
   client_id: z.string().uuid("Selecione um cliente"),
   equipment_id: z.string().uuid("Selecione um equipamento"),
+  rented_quantity: z.number().int().min(1, "Quantidade deve ser no mínimo 1"),
   status: z.enum(["ativo", "encerrado", "cancelado", "pendente"]),
   start_date: z.string().min(1, "Data de início obrigatória"),
   end_date: z.string().optional(),
@@ -41,6 +44,7 @@ interface Props {
 
 export function ContractForm({ contract, companyId, onClose, onSuccess }: Props) {
   const isEdit = !!contract;
+  const { isReadOnly } = useSubscription();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUploading, setPdfUploading] = useState(false);
@@ -68,12 +72,26 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
       const supabase = createClient();
       const { data } = await supabase
         .from("equipment")
-        .select("id, name, code, status, daily_rate, monthly_rate")
+        .select("id, name, code, status, daily_rate, monthly_rate, quantity")
         .eq("company_id", companyId)
         .in("status", ["disponivel", "alugado"])
         .order("name");
       return data || [];
     },
+  });
+
+  const { data: activeContracts = [] } = useQuery({
+    queryKey: ["active-contracts-quantities", companyId],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("contracts")
+        .select("id, equipment_id, rented_quantity, status")
+        .eq("company_id", companyId)
+        .in("status", ["ativo", "pendente"]);
+      return data || [];
+    },
+    enabled: !!companyId,
   });
 
   const {
@@ -89,6 +107,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
       contract_number: contract?.contract_number || generateContractNumber(),
       client_id: contract?.client_id || "",
       equipment_id: contract?.equipment_id || "",
+      rented_quantity: contract?.rented_quantity || 1,
       status: contract?.status || "ativo",
       start_date: contract?.start_date || new Date().toISOString().split("T")[0],
       end_date: contract?.end_date || "",
@@ -106,6 +125,14 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
 
   const paymentFrequency = watch("payment_frequency");
   const isUnica = paymentFrequency === "unica";
+
+  function getEquipmentAvailability(eq: any) {
+    const total = Number(eq.quantity) || 1;
+    const rented = activeContracts
+      .filter((c: any) => c.equipment_id === eq.id && c.id !== contract?.id)
+      .reduce((sum: number, c: any) => sum + (Number(c.rented_quantity) || 1), 0);
+    return Math.max(0, total - rented);
+  }
 
   function handleEquipmentChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const eq = equipment.find((eq: any) => eq.id === e.target.value);
@@ -145,6 +172,20 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
   }
 
   async function onSubmit(data: FormData) {
+    if (isReadOnly) {
+      toast.error("O período de testes expirou. Ative sua assinatura para salvar alterações.");
+      return;
+    }
+
+    const selectedEq = equipment.find((eq: any) => eq.id === data.equipment_id);
+    if (selectedEq) {
+      const available = getEquipmentAvailability(selectedEq);
+      if (data.rented_quantity > available) {
+        toast.error(`Quantidade indisponível. Apenas ${available} itens estão disponíveis para aluguel.`);
+        return;
+      }
+    }
+
     const supabase = createClient();
     setPdfUploading(true);
 
@@ -189,11 +230,9 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
       }
 
       // Update equipment status
-      if (!isEdit && data.status === "ativo") {
-        await supabase
-          .from("equipment")
-          .update({ status: "alugado" })
-          .eq("id", data.equipment_id);
+      await updateEquipmentStatus(supabase, data.equipment_id);
+      if (contract?.equipment_id && contract.equipment_id !== data.equipment_id) {
+        await updateEquipmentStatus(supabase, contract.equipment_id);
       }
 
       // Calculate transaction amount
@@ -262,7 +301,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
     }
   }
 
-  const isBusy = isSubmitting || pdfUploading;
+  const isBusy = isSubmitting || pdfUploading || isReadOnly;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -317,13 +356,27 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
                   }}
                 >
                   <option value="">Selecionar equipamento...</option>
-                  {equipment.map((eq: any) => (
-                    <option key={eq.id} value={eq.id}>
-                      {eq.name} ({eq.code}) — {eq.status === "alugado" ? "⚠ Alugado" : "✓ Disponível"}
-                    </option>
-                  ))}
+                  {equipment.map((eq: any) => {
+                    const available = getEquipmentAvailability(eq);
+                    return (
+                      <option key={eq.id} value={eq.id} disabled={available <= 0 && eq.id !== contract?.equipment_id}>
+                        {eq.name} ({eq.code}) — {available > 0 ? `✓ Disponível: ${available}/${eq.quantity || 1}` : "⚠ Indisponível"}
+                      </option>
+                    );
+                  })}
                 </select>
                 {errors.equipment_id && <p className="text-xs text-destructive mt-1">{errors.equipment_id.message}</p>}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Quantidade Locada *</label>
+                <input
+                  {...register("rented_quantity", { valueAsNumber: true })}
+                  type="number"
+                  className="input w-full"
+                  min="1"
+                  placeholder="1"
+                />
+                {errors.rented_quantity && <p className="text-xs text-destructive mt-1">{errors.rented_quantity.message}</p>}
               </div>
             </div>
           </section>

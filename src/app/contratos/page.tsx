@@ -61,8 +61,20 @@ export default function ContratosPage() {
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const supabase = createClient();
+      // Fetch contract details to get the equipment ID before updating
+      const { data: contract } = await supabase
+        .from("contracts")
+        .select("equipment_id")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase.from("contracts").update({ status }).eq("id", id);
       if (error) throw error;
+
+      if (contract?.equipment_id) {
+        const { updateEquipmentStatus } = await import("@/services/equipment");
+        await updateEquipmentStatus(supabase, contract.equipment_id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries();

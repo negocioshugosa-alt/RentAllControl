@@ -109,6 +109,7 @@ export function EquipmentDetail({ equipment: eq, onClose, onEdit }: Props) {
             {[
               { label: "Marca", value: eq.brand },
               { label: "Modelo", value: eq.model },
+              { label: "Quantidade Total", value: eq.quantity || 1 },
               { label: "Chassi", value: eq.chassis },
               { label: "Horímetro", value: eq.hourimeter ? `${eq.hourimeter}h` : null },
               { label: "KM", value: eq.km ? `${eq.km.toLocaleString("pt-BR")} km` : null },
