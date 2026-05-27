@@ -99,12 +99,18 @@ export function Sidebar({ companyName = "Minha Empresa", userName = "Usuário", 
                 return (
                   <li key={item.href}>
                     <Link href={item.href} className={cn("sidebar-link", isActive && "active")}>
-                      <item.icon className="w-4 h-4 flex-shrink-0" />
+                      <item.icon className={cn(
+                        "w-4 h-4 flex-shrink-0",
+                        item.icon === Bell && alertCount > 0 && "text-yellow-400 dark:text-yellow-400 fill-yellow-400/20 animate-pulse"
+                      )} />
                       <span className="flex-1">{item.label}</span>
                       {item.badge && alertCount > 0 && (
-                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1">
-                          {alertCount > 99 ? "99+" : alertCount}
-                        </span>
+                        <>
+                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1 animate-pulse">
+                            {alertCount > 99 ? "99+" : alertCount}
+                          </span>
+                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                        </>
                       )}
                     </Link>
                   </li>

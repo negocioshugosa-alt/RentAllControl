@@ -1038,7 +1038,7 @@ export default function RelatoriosPage() {
               <div className="flex gap-2 mt-auto">
                 <button
                   onClick={() => handleExport(report.id, "pdf")}
-                  disabled={!!generating || isLoading}
+                  disabled={generating === `${report.id}-pdf` || isLoading}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 text-red-600 text-sm font-medium transition-colors ${
                     generating === `${report.id}-pdf` ? "opacity-50 cursor-not-allowed" : "hover:bg-red-500/20"
                   }`}
@@ -1048,7 +1048,7 @@ export default function RelatoriosPage() {
                 </button>
                 <button
                   onClick={() => handleExport(report.id, "excel")}
-                  disabled={!!generating || isLoading}
+                  disabled={generating === `${report.id}-excel` || isLoading}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-green-500/10 text-green-600 text-sm font-medium transition-colors ${
                     generating === `${report.id}-excel` ? "opacity-50 cursor-not-allowed" : "hover:bg-green-500/20"
                   }`}
