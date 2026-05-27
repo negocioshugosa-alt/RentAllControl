@@ -71,26 +71,8 @@ export default function EquipamentosPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id, companies(*)")
-        .eq("user_id", user.id)
-        .single();
-
-      const company = (profile as any)?.companies;
-      if (company?.subscription_status === "past_due") {
-        throw new Error("Acesso suspenso: Identificamos uma pendência financeira em sua assinatura.");
-      }
-      if (
-        company?.subscription_status === "trialing" &&
-        company?.subscription_trial_ends_at &&
-        new Date(company.subscription_trial_ends_at) < new Date()
-      ) {
-        throw new Error("Trial expirado: Seu período de testes terminou. Ative sua assinatura para remover dados.");
-      }
+      
+      await assertCanWrite(companyId!);
 
       const { data: equipment } = await supabase
         .from("equipment")

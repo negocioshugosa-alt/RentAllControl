@@ -62,7 +62,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-display font-bold text-xl">RentFlow</span>
+            <span className="font-display font-bold text-xl">RentAllControl</span>
           </div>
           <h1 className="font-display font-bold text-4xl leading-tight mb-4">
             Gestão completa<br />para sua locadora
@@ -99,7 +99,7 @@ export default function LoginPage() {
             <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-bold text-lg">RentFlow</span>
+            <span className="font-display font-bold text-lg">RentAllControl</span>
           </div>
 
           <h2 className="text-2xl font-bold font-display mb-1">Bem-vindo de volta</h2>
