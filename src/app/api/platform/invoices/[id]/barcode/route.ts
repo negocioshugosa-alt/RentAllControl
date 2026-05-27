@@ -6,10 +6,7 @@ const ASAAS_BASE_URL = process.env.NEXT_PUBLIC_ASAAS_SANDBOX === "true"
   ? "https://sandbox.asaas.com/api/v3"
   : "https://api.asaas.com/api/v3";
 
-export async function GET(
-  req: Request,
-  context: { params: { id: string } }
-) {
+export async function GET(request: Request, context: { params: { id: string } }) {
   const { id } = context.params;
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();

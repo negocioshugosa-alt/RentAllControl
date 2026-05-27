@@ -7,12 +7,12 @@ import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: {
-    default: "RentFlow — ERP para Locadoras",
-    template: "%s | RentFlow",
+    default: "RentAllControl — ERP para Locadoras",
+    template: "%s | RentAllControl",
   },
   description: "Sistema ERP completo para gestão de locadoras de máquinas, equipamentos e caminhões.",
   keywords: ["erp", "locadora", "máquinas", "equipamentos", "gestão", "contratos"],
-  authors: [{ name: "RentFlow" }],
+  authors: [{ name: "RentAllControl" }],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

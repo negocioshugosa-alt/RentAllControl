@@ -491,7 +491,7 @@ export default function AssinaturaPage() {
               <QrCode className="w-5 h-5 text-emerald-500 animate-bounce" />
               Pagar com Pix
             </h3>
-            <p className="text-xs text-center text-muted-foreground">Abra o app do seu banco, escolha "Pagar com Pix" e aponte a câmera para o QR Code abaixo:</p>
+            <p className="text-xs text-center text-muted-foreground">Abra o app do seu banco, escolha &quot;Pagar com Pix&quot; e aponte a câmera para o QR Code abaixo:</p>
 
             <div className="w-48 h-48 border-2 border-primary/20 rounded-2xl mx-auto flex items-center justify-center p-2 bg-white">
               {pixModalData.qrCode ? (
