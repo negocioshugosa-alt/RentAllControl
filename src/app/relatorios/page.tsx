@@ -4,19 +4,21 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/shared/Header";
 import { useCompanyContext } from "@/hooks/useCompanyId";
-import { BarChart3, Download, FileText, Users, Wrench, DollarSign, AlertTriangle, FileSpreadsheet } from "lucide-react";
+import { BarChart3, Download, FileText, Users, Wrench, DollarSign, AlertTriangle, FileSpreadsheet, TrendingUp, Activity } from "lucide-react";
 import { formatCurrency, formatDate, formatDocument } from "@/lib/utils";
 import { toast } from "sonner";
 
-type ReportType = "financeiro" | "equipamentos" | "clientes" | "contratos" | "inadimplencia";
+type ReportType = "financeiro" | "equipamentos" | "equipamentos_resumido" | "clientes" | "contratos" | "inadimplencia" | "kpis_saude";
 type ExportFormat = "pdf" | "excel";
 
 const reports = [
   { id: "financeiro" as ReportType, title: "Relatório Financeiro", description: "Receitas, despesas e fluxo de caixa do período", icon: DollarSign, color: "text-blue-600", bg: "bg-blue-500/10" },
-  { id: "equipamentos" as ReportType, title: "Relatório por Equipamento", description: "Lucratividade e indicadores por equipamento", icon: Wrench, color: "text-purple-600", bg: "bg-purple-500/10" },
+  { id: "equipamentos" as ReportType, title: "Relatório por Equipamento", description: "Detalhamento de todos os lançamentos por equipamento", icon: Wrench, color: "text-purple-600", bg: "bg-purple-500/10" },
+  { id: "equipamentos_resumido" as ReportType, title: "Resumo por Equipamento", description: "Tabela consolidada de faturamento, custo e ROI", icon: BarChart3, color: "text-indigo-600", bg: "bg-indigo-500/10" },
   { id: "clientes" as ReportType, title: "Relatório de Clientes", description: "Cadastro completo e histórico financeiro", icon: Users, color: "text-green-600", bg: "bg-green-500/10" },
   { id: "contratos" as ReportType, title: "Contratos Ativos", description: "Todos os contratos em andamento", icon: FileText, color: "text-orange-600", bg: "bg-orange-500/10" },
   { id: "inadimplencia" as ReportType, title: "Inadimplência", description: "Clientes e contas com pagamentos em atraso", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-500/10" },
+  { id: "kpis_saude" as ReportType, title: "Saúde da Empresa (KPIs)", description: "Indicadores executivos, margens, ocupação e categorias", icon: Activity, color: "text-teal-600", bg: "bg-teal-500/10" },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -214,6 +216,284 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     eqLink.click();
     URL.revokeObjectURL(eqUrl);
     return; // Early return — custom workbook already downloaded
+  }
+  if (type === "equipamentos_resumido") {
+    const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
+    const { data: transactions } = await supabase.from("transactions")
+      .select("equipment_id, contract_id, type, amount, status, due_date, paid_date")
+      .eq("company_id", companyId).neq("status", "cancelado");
+    const { data: contractsList } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
+
+    const eqMap = new Map((contractsList || []).map((c) => [c.id, c.equipment_id]));
+    const list = equipments || [];
+    sheetName = "Resumo Equipamentos";
+
+    const mappedTxs = (transactions || []).map((t) => ({
+      ...t,
+      txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+    })).filter((t) => t.txDate >= start && t.txDate <= end);
+
+    const eqWb = new ExcelJS.Workbook();
+    const eqWs = eqWb.addWorksheet(sheetName);
+
+    const headers = ["Código", "Equipamento", "Categoria", "Status", "Receitas (R$)", "Custos (R$)", "Lucro Líquido (R$)", "ROI (%)", "Contratos Ativos"];
+    eqWs.columns = headers.map((h) => ({ header: h, key: h, width: h === "Equipamento" ? 30 : 18 }));
+    eqWs.getRow(1).font = { bold: true };
+    eqWs.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF3B82F6" } };
+    eqWs.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+
+    let totalRec = 0;
+    let totalCst = 0;
+    let totalContratosGeral = 0;
+
+    for (const eq of list) {
+      const txs = mappedTxs.filter((t) => {
+        const eqId = t.equipment_id || (t.contract_id ? eqMap.get(t.contract_id) : null);
+        return eqId === eq.id;
+      });
+
+      const revenue = txs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
+      const costs = txs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+      const profit = revenue - costs;
+      const roi = costs > 0 ? (profit / costs) * 100 : (revenue > 0 ? 100 : 0);
+      const activeContracts = (contractsList || []).filter((c) => c.equipment_id === eq.id).length;
+
+      totalRec += revenue;
+      totalCst += costs;
+      totalContratosGeral += activeContracts;
+
+      const row = eqWs.addRow({
+        "Código": eq.code,
+        "Equipamento": eq.name,
+        "Categoria": categoryLabels[eq.category] || eq.category || "—",
+        "Status": eq.status === "disponivel" ? "Disponível" : eq.status === "alugado" ? "Alugado" : eq.status === "manutencao" ? "Manutenção" : eq.status || "—",
+        "Receitas (R$)": revenue,
+        "Custos (R$)": costs,
+        "Lucro Líquido (R$)": profit,
+        "ROI (%)": Number(roi.toFixed(1)),
+        "Contratos Ativos": activeContracts
+      });
+
+      row.getCell("Receitas (R$)").numFmt = "#,##0.00";
+      row.getCell("Custos (R$)").numFmt = "#,##0.00";
+      row.getCell("Lucro Líquido (R$)").numFmt = "#,##0.00";
+      row.getCell("ROI (%)").numFmt = "0.0";
+
+      if (profit >= 0) {
+        row.getCell("Lucro Líquido (R$)").font = { bold: true, color: { argb: "FF16A34A" } };
+      } else {
+        row.getCell("Lucro Líquido (R$)").font = { bold: true, color: { argb: "FFDC2626" } };
+      }
+    }
+
+    const totalProfitGeral = totalRec - totalCst;
+    const totalRoiGeral = totalCst > 0 ? (totalProfitGeral / totalCst) * 100 : (totalRec > 0 ? 100 : 0);
+
+    const totalRow = eqWs.addRow({
+      "Código": "TOTAL GERAL",
+      "Equipamento": "",
+      "Categoria": "",
+      "Status": "",
+      "Receitas (R$)": totalRec,
+      "Custos (R$)": totalCst,
+      "Lucro Líquido (R$)": totalProfitGeral,
+      "ROI (%)": Number(totalRoiGeral.toFixed(1)),
+      "Contratos Ativos": totalContratosGeral
+    });
+
+    totalRow.font = { bold: true };
+    totalRow.eachCell((cell, colNumber) => {
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "double" }
+      };
+      if (colNumber === 5 || colNumber === 6 || colNumber === 7) {
+        cell.numFmt = "#,##0.00";
+      }
+      if (colNumber === 8) {
+        cell.numFmt = "0.0";
+      }
+    });
+
+    if (totalProfitGeral >= 0) {
+      totalRow.getCell("Lucro Líquido (R$)").font = { bold: true, color: { argb: "FF16A34A" } };
+    } else {
+      totalRow.getCell("Lucro Líquido (R$)").font = { bold: true, color: { argb: "FFDC2626" } };
+    }
+
+    const eqInfo = eqWb.addWorksheet("Informações");
+    eqInfo.addRows([
+      ["RentAllControl — Resumo por Equipamento"],
+      ["Empresa:", companyName],
+      ["Período:", `${formatDate(start)} a ${formatDate(end)}`],
+      ["Gerado em:", formatDate(new Date())],
+    ]);
+    eqInfo.getColumn(1).width = 30;
+    eqInfo.getColumn(2).width = 36;
+
+    const eqBuffer = await eqWb.xlsx.writeBuffer();
+    const eqBlob = new Blob([eqBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const eqUrl = URL.createObjectURL(eqBlob);
+    const eqLink = document.createElement("a");
+    eqLink.href = eqUrl;
+    eqLink.download = `rentallcontrol-resumo-equipamentos-${new Date().toISOString().split("T")[0]}.xlsx`;
+    eqLink.click();
+    URL.revokeObjectURL(eqUrl);
+    return;
+  }
+  if (type === "kpis_saude") {
+    const { data: transactions } = await supabase.from("transactions")
+      .select("type, category, amount, status, due_date, paid_date")
+      .eq("company_id", companyId);
+    const { data: equipment } = await supabase.from("equipment").select("status").eq("company_id", companyId);
+    const { data: activeContracts } = await supabase.from("contracts").select("id").eq("company_id", companyId).eq("status", "ativo");
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const txsList = transactions || [];
+
+    const paidTxs = txsList.map((t) => ({
+      ...t,
+      txDate: t.paid_date || t.due_date
+    })).filter((t) => t.status === "pago" && t.txDate >= start && t.txDate <= end);
+
+    const revenue = paidTxs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
+    const costs = paidTxs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+    const netProfit = revenue - costs;
+    const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+    const eqList = equipment || [];
+    const totalEq = eqList.length;
+    const rentedEq = eqList.filter((e) => e.status === "alugado").length;
+    const maintenanceEq = eqList.filter((e) => e.status === "manutencao").length;
+    const availableEq = eqList.filter((e) => e.status === "disponivel").length;
+    const occupancyRate = totalEq > 0 ? (rentedEq / totalEq) * 100 : 0;
+
+    const overdueAmt = txsList.filter((t) => 
+      t.type === "receita" && 
+      (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))
+    ).reduce((s, t) => s + Number(t.amount), 0);
+
+    const kpiWb = new ExcelJS.Workbook();
+    const kpiWs = kpiWb.addWorksheet("Saúde da Empresa");
+
+    kpiWs.views = [{ showGridLines: true }];
+
+    kpiWs.mergeCells("A1:D1");
+    kpiWs.getCell("A1").value = "RentAllControl — Diagnóstico de Saúde da Empresa";
+    kpiWs.getCell("A1").font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+    kpiWs.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F766E" } };
+    kpiWs.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+    kpiWs.getRow(1).height = 40;
+
+    kpiWs.addRow([]);
+
+    kpiWs.addRow(["INDICADORES FINANCEIROS GERAIS DO PERÍODO"]).font = { bold: true, size: 12, color: { argb: "FF0F766E" } };
+    kpiWs.addRow(["Indicador", "Valor (Período)", "Meta / Status", "Descrição"]);
+    kpiWs.getRow(4).font = { bold: true };
+    kpiWs.getRow(4).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+
+    kpiWs.addRow(["Faturamento (Receitas)", revenue, "—", "Total de valores recebidos/pagos no período"]);
+    kpiWs.addRow(["Custos Operacionais", costs, "—", "Total de despesas pagas no período"]);
+    const profitRow = kpiWs.addRow(["Lucro Líquido", netProfit, netProfit >= 0 ? "Positivo" : "Prejuízo", "Faturamento líquido menos custos operacionais"]);
+    profitRow.getCell("B").font = { bold: true, color: { argb: netProfit >= 0 ? "FF16A34A" : "FFDC2626" } };
+    profitRow.getCell("C").font = { bold: true, color: { argb: netProfit >= 0 ? "FF16A34A" : "FFDC2626" } };
+
+    const marginRow = kpiWs.addRow(["Margem de Lucro", Number(profitMargin.toFixed(1)), profitMargin >= 20 ? "Ótima" : "Abaixo da Meta", "Percentual de rentabilidade sobre receita"]);
+    marginRow.getCell("B").numFmt = "0.0\"%\"";
+
+    kpiWs.addRow([]);
+
+    kpiWs.addRow(["MÉTRICAS OPERACIONAIS E PATRIMÔNIO"]).font = { bold: true, size: 12, color: { argb: "FF0F766E" } };
+    kpiWs.addRow(["Indicador", "Valor Atual", "Percentual", "Descrição"]);
+    kpiWs.getRow(11).font = { bold: true };
+    kpiWs.getRow(11).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+
+    kpiWs.addRow(["Equipamentos Alugados", rentedEq, Number((totalEq > 0 ? rentedEq/totalEq*100 : 0).toFixed(1)), "Equipamentos em contratos ativos"]);
+    kpiWs.addRow(["Equipamentos Disponíveis", availableEq, Number((totalEq > 0 ? availableEq/totalEq*100 : 0).toFixed(1)), "Equipamentos no pátio prontos para aluguel"]);
+    kpiWs.addRow(["Equipamentos em Manutenção", maintenanceEq, Number((totalEq > 0 ? maintenanceEq/totalEq*100 : 0).toFixed(1)), "Equipamentos indisponíveis por reparos"]);
+    const occRow = kpiWs.addRow(["Taxa de Ocupação Geral", Number(occupancyRate.toFixed(1)), "—", "Percentual de frota alugada sobre o total"]);
+    occRow.getCell("B").numFmt = "0.0\"%\"";
+    occRow.font = { bold: true };
+
+    kpiWs.addRow(["Contratos Ativos", activeContracts?.length || 0, "—", "Número de contratos atualmente em vigor"]);
+    kpiWs.addRow(["Inadimplência Geral (Atraso)", overdueAmt, "—", "Total de contas a receber vencidas/pendentes acumuladas"]);
+
+    kpiWs.addRow([]);
+
+    kpiWs.addRow(["DETALHAMENTO DE DESPESAS POR CATEGORIA DO PERÍODO"]).font = { bold: true, size: 12, color: { argb: "FF0F766E" } };
+    kpiWs.addRow(["Categoria", "Despesa (R$)", "Participação (%)", "Descrição Categoria"]);
+    kpiWs.getRow(21).font = { bold: true };
+    kpiWs.getRow(21).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+
+    const catDespMap: Record<string, number> = {};
+    paidTxs.filter((t) => t.type === "despesa").forEach((t) => {
+      catDespMap[t.category] = (catDespMap[t.category] || 0) + Number(t.amount);
+    });
+
+    let currentCostRow = 22;
+    Object.entries(catDespMap)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([cat, val]) => {
+        const row = kpiWs.addRow([
+          categoryLabels[cat] || cat,
+          val,
+          Number((costs > 0 ? (val / costs) * 100 : 0).toFixed(1)),
+          `Custos operacionais com ${categoryLabels[cat]?.toLowerCase() || cat}`
+        ]);
+        row.getCell("B").numFmt = "#,##0.00";
+        row.getCell("C").numFmt = "0.0\"%\"";
+        currentCostRow++;
+      });
+
+    kpiWs.addRow([]);
+
+    kpiWs.addRow(["DETALHAMENTO DE RECEITAS POR CATEGORIA DO PERÍODO"]).font = { bold: true, size: 12, color: { argb: "FF0F766E" } };
+    kpiWs.addRow(["Categoria", "Receita (R$)", "Participação (%)", "Descrição Categoria"]);
+    const headerRowIdx = currentCostRow + 2;
+    kpiWs.getRow(headerRowIdx).font = { bold: true };
+    kpiWs.getRow(headerRowIdx).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+
+    const catRecMap: Record<string, number> = {};
+    paidTxs.filter((t) => t.type === "receita").forEach((t) => {
+      catRecMap[t.category] = (catRecMap[t.category] || 0) + Number(t.amount);
+    });
+
+    Object.entries(catRecMap)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([cat, val]) => {
+        const row = kpiWs.addRow([
+          categoryLabels[cat] || cat,
+          val,
+          Number((revenue > 0 ? (val / revenue) * 100 : 0).toFixed(1)),
+          `Receitas originadas de ${categoryLabels[cat]?.toLowerCase() || cat}`
+        ]);
+        row.getCell("B").numFmt = "#,##0.00";
+        row.getCell("C").numFmt = "0.0\"%\"";
+      });
+
+    for (let rowIdx = 5; rowIdx <= 9; rowIdx++) {
+      kpiWs.getCell(`B${rowIdx}`).numFmt = "#,##0.00";
+    }
+    kpiWs.getCell(`B18`).numFmt = "#,##0.00";
+
+    kpiWs.getColumn(1).width = 32;
+    kpiWs.getColumn(2).width = 20;
+    kpiWs.getColumn(3).width = 20;
+    kpiWs.getColumn(4).width = 45;
+
+    const kpiBuffer = await kpiWb.xlsx.writeBuffer();
+    const kpiBlob = new Blob([kpiBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const kpiUrl = URL.createObjectURL(kpiBlob);
+    const kpiLink = document.createElement("a");
+    kpiLink.href = kpiUrl;
+    kpiLink.download = `rentallcontrol-saude-empresa-${new Date().toISOString().split("T")[0]}.xlsx`;
+    kpiLink.click();
+    URL.revokeObjectURL(kpiUrl);
+    return;
   }
   if (type === "clientes") {
     const { data } = await supabase.from("clients").select("*").eq("company_id", companyId).order("name");
@@ -456,6 +736,200 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
       currentY = (doc as any).lastAutoTable.finalY + 12;
     }
   }
+  if (type === "equipamentos_resumido") {
+    const { data: equipments } = await supabase.from("equipment").select("*").eq("company_id", companyId).order("name");
+    const { data: transactions } = await supabase.from("transactions")
+      .select("equipment_id, contract_id, type, amount, status, due_date, paid_date")
+      .eq("company_id", companyId).neq("status", "cancelado");
+    const { data: contracts } = await supabase.from("contracts").select("id, equipment_id").eq("company_id", companyId);
+
+    const eqMap = new Map((contracts || []).map((c) => [c.id, c.equipment_id]));
+    const list = equipments || [];
+
+    const mappedTxs = (transactions || []).map((t) => ({
+      ...t,
+      txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+    })).filter((t) => t.txDate >= start && t.txDate <= end);
+
+    let totalRec = 0;
+    let totalCst = 0;
+    let totalContratosGeral = 0;
+
+    const tableRows = list.map((eq) => {
+      const txs = mappedTxs.filter((t) => {
+        const eqId = t.equipment_id || (t.contract_id ? eqMap.get(t.contract_id) : null);
+        return eqId === eq.id;
+      });
+
+      const revenue = txs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
+      const costs = txs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+      const profit = revenue - costs;
+      const roi = costs > 0 ? (profit / costs) * 100 : (revenue > 0 ? 100 : 0);
+      const activeContracts = (contracts || []).filter((c) => c.equipment_id === eq.id).length;
+
+      totalRec += revenue;
+      totalCst += costs;
+      totalContratosGeral += activeContracts;
+
+      return [
+        eq.code || "—",
+        eq.name || "—",
+        categoryLabels[eq.category] || eq.category || "—",
+        eq.status === "disponivel" ? "Disponível" : eq.status === "alugado" ? "Alugado" : eq.status === "manutencao" ? "Manutenção" : eq.status || "—",
+        formatCurrency(revenue),
+        formatCurrency(costs),
+        formatCurrency(profit),
+        `${roi.toFixed(1)}%`,
+        activeContracts.toString()
+      ];
+    });
+
+    const totalProfitGeral = totalRec - totalCst;
+    const totalRoiGeral = totalCst > 0 ? (totalProfitGeral / totalCst) * 100 : (totalRec > 0 ? 100 : 0);
+
+    autoTable(doc, {
+      startY: 56,
+      head: [["Código", "Equipamento", "Categoria", "Status", "Receitas", "Custos", "Lucro", "ROI", "Contratos"]],
+      body: tableRows,
+      foot: [
+        ["TOTAL GERAL", "", "", "", formatCurrency(totalRec), formatCurrency(totalCst), formatCurrency(totalProfitGeral), `${totalRoiGeral.toFixed(1)}%`, totalContratosGeral.toString()]
+      ],
+      theme: "striped",
+      headStyles: { fillColor: [79, 70, 229], fontSize: 8 },
+      footStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontSize: 8, fontStyle: "bold" },
+      bodyStyles: { fontSize: 7.5 },
+      didParseCell: function(data) {
+        if (data.section === "body" && data.column.index === 6) {
+          const valText = data.cell.text[0];
+          if (valText.startsWith("-")) {
+            data.cell.styles.textColor = [220, 38, 38];
+            data.cell.styles.fontStyle = "bold";
+          } else if (valText !== "R$ 0,00") {
+            data.cell.styles.textColor = [22, 163, 74];
+            data.cell.styles.fontStyle = "bold";
+          }
+        }
+        if (data.section === "foot") {
+          if (data.column.index < 4) {
+            data.cell.styles.fillColor = [255, 255, 255];
+          }
+          if (data.column.index === 6) {
+            if (totalProfitGeral >= 0) {
+              data.cell.styles.textColor = [22, 163, 74];
+            } else {
+              data.cell.styles.textColor = [220, 38, 38];
+            }
+          }
+        }
+      }
+    });
+  }
+  if (type === "kpis_saude") {
+    const { data: transactions } = await supabase.from("transactions")
+      .select("type, category, amount, status, due_date, paid_date")
+      .eq("company_id", companyId);
+    const { data: equipment } = await supabase.from("equipment").select("status").eq("company_id", companyId);
+    const { data: activeContracts } = await supabase.from("contracts").select("id").eq("company_id", companyId).eq("status", "ativo");
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const txsList = transactions || [];
+
+    const paidTxs = txsList.map((t) => ({
+      ...t,
+      txDate: t.paid_date || t.due_date
+    })).filter((t) => t.status === "pago" && t.txDate >= start && t.txDate <= end);
+
+    const revenue = paidTxs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
+    const costs = paidTxs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
+    const netProfit = revenue - costs;
+    const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+    const eqList = equipment || [];
+    const totalEq = eqList.length;
+    const rentedEq = eqList.filter((e) => e.status === "alugado").length;
+    const maintenanceEq = eqList.filter((e) => e.status === "manutencao").length;
+    const availableEq = eqList.filter((e) => e.status === "disponivel").length;
+    const occupancyRate = totalEq > 0 ? (rentedEq / totalEq) * 100 : 0;
+
+    const overdueAmt = txsList.filter((t) => 
+      t.type === "receita" && 
+      (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))
+    ).reduce((s, t) => s + Number(t.amount), 0);
+
+    autoTable(doc, {
+      startY: 56,
+      head: [["Indicador / KPI da Empresa", "Valor Consolidado", "Status / Diagnóstico"]],
+      body: [
+        ["Faturamento Operacional (Receitas)", formatCurrency(revenue), "—"],
+        ["Custos Operacionais (Despesas)", formatCurrency(costs), "—"],
+        ["Lucro Líquido Real", formatCurrency(netProfit), netProfit >= 0 ? "Lucrativo (Positivo)" : "Prejuízo (Negativo)"],
+        ["Margem de Lucro Geral", `${profitMargin.toFixed(1)}%`, profitMargin >= 20 ? "Excelente (>= 20%)" : "Requer Atenção (< 20%)"],
+        ["Taxa de Ocupação da Frota", `${occupancyRate.toFixed(1)}%`, occupancyRate >= 70 ? "Alta Ocupação" : "Frota Subutilizada"],
+        ["Contratos Ativos Atualmente", (activeContracts?.length || 0).toString(), "Operação em Andamento"],
+        ["Inadimplência Geral Acumulada", formatCurrency(overdueAmt), overdueAmt > 0 ? "Atraso sob Risco" : "Zero Atrasos"],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [13, 148, 136], fontSize: 9 },
+      bodyStyles: { fontSize: 8.5 },
+      didParseCell: function(data) {
+        if (data.section === "body" && data.row.index === 2) {
+          data.cell.styles.fontStyle = "bold";
+          data.cell.styles.textColor = netProfit >= 0 ? [22, 163, 74] : [220, 38, 38];
+        }
+        if (data.section === "body" && data.row.index === 6 && overdueAmt > 0) {
+          data.cell.styles.textColor = [220, 38, 38];
+        }
+      }
+    });
+
+    let currentY = (doc as any).lastAutoTable.finalY + 12;
+
+    const catDespMap: Record<string, number> = {};
+    paidTxs.filter((t) => t.type === "despesa").forEach((t) => {
+      catDespMap[t.category] = (catDespMap[t.category] || 0) + Number(t.amount);
+    });
+
+    const despesasRows = Object.entries(catDespMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat, val]) => [
+        categoryLabels[cat] || cat,
+        formatCurrency(val),
+        `${(costs > 0 ? (val / costs) * 100 : 0).toFixed(1)}%`
+      ]);
+
+    const catRecMap: Record<string, number> = {};
+    paidTxs.filter((t) => t.type === "receita").forEach((t) => {
+      catRecMap[t.category] = (catRecMap[t.category] || 0) + Number(t.amount);
+    });
+
+    const receitasRows = Object.entries(catRecMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat, val]) => [
+        categoryLabels[cat] || cat,
+        formatCurrency(val),
+        `${(revenue > 0 ? (val / revenue) * 100 : 0).toFixed(1)}%`
+      ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [["Receitas por Categoria", "Valor (R$)", "Peso %"]],
+      body: receitasRows,
+      theme: "striped",
+      headStyles: { fillColor: [13, 148, 136], fontSize: 8 },
+      bodyStyles: { fontSize: 7.5 }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 12;
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [["Despesas por Categoria", "Valor (R$)", "Peso %"]],
+      body: despesasRows,
+      theme: "striped",
+      headStyles: { fillColor: [13, 148, 136], fontSize: 8 },
+      bodyStyles: { fontSize: 7.5 }
+    });
+  }
   if (type === "clientes") {
     const { data } = await supabase.from("clients").select("*").eq("company_id", companyId).order("name");
     autoTable(doc, { startY: 56, head: [["Nome", "Tipo", "CPF/CNPJ", "Email", "Telefone", "Cidade/UF"]],
@@ -565,7 +1039,9 @@ export default function RelatoriosPage() {
                 <button
                   onClick={() => handleExport(report.id, "pdf")}
                   disabled={!!generating || isLoading}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 text-red-600 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 text-red-600 text-sm font-medium transition-colors ${
+                    generating === `${report.id}-pdf` ? "opacity-50 cursor-not-allowed" : "hover:bg-red-500/20"
+                  }`}
                 >
                   <Download className="w-4 h-4" />
                   {generating === `${report.id}-pdf` ? "Gerando…" : "PDF"}
@@ -573,7 +1049,9 @@ export default function RelatoriosPage() {
                 <button
                   onClick={() => handleExport(report.id, "excel")}
                   disabled={!!generating || isLoading}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-green-500/10 text-green-600 text-sm font-medium hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-green-500/10 text-green-600 text-sm font-medium transition-colors ${
+                    generating === `${report.id}-excel` ? "opacity-50 cursor-not-allowed" : "hover:bg-green-500/20"
+                  }`}
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   {generating === `${report.id}-excel` ? "Gerando…" : "Excel"}
