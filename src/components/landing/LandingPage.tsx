@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 // src/components/landing/LandingPage.tsx
 import Link from "next/link";
 import { Zap, BarChart3, Wrench, FileText, DollarSign, Bell, Check, ChevronDown, ArrowRight, Users, Shield, TrendingUp } from "lucide-react";
@@ -35,7 +35,7 @@ const plans = [
 ];
 
 const faqs = [
-  { q: "Preciso instalar algo?", a: "Não. O RentFlow é 100% online. Acesse de qualquer dispositivo com um navegador." },
+  { q: "Preciso instalar algo?", a: "Não. O RentAllControl é 100% online. Acesse de qualquer dispositivo com um navegador." },
   { q: "Como funciona o período gratuito?", a: "30 dias grátis sem precisar de cartão de crédito. Explore todas as funcionalidades sem compromisso." },
   { q: "Os meus dados são seguros?", a: "Sim. Utilizamos Supabase com PostgreSQL, criptografia em trânsito e em repouso, e backups automáticos diários." },
   { q: "Posso integrar com meu gateway de pagamento?", a: "Sim. Integramos nativamente com a Asaas para emissão de PIX, boleto e cartão de crédito com baixa automática." },
@@ -68,7 +68,7 @@ export function LandingPage() {
             <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-bold">RentFlow</span>
+            <span className="font-display font-bold">RentAllControl</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Funcionalidades</a>
@@ -139,7 +139,7 @@ export function LandingPage() {
               </div>
               <div className="flex-1 mx-4">
                 <div className="bg-background rounded-md px-3 py-1 text-xs text-muted-foreground font-mono max-w-sm">
-                  app.rentflow.com.br/dashboard
+                  app.RentAllControl.com.br/dashboard
                 </div>
               </div>
             </div>
@@ -199,7 +199,7 @@ export function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">Tudo que sua locadora precisa</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Do controle operacional à análise financeira, o RentFlow centraliza toda a gestão da sua empresa.
+              Do controle operacional à análise financeira, o RentAllControl centraliza toda a gestão da sua empresa.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -321,10 +321,10 @@ export function LandingPage() {
             <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center">
               <Zap className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="font-display font-bold text-sm">RentFlow</span>
+            <span className="font-display font-bold text-sm">RentAllControl</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} RentFlow. Todos os direitos reservados.
+            © {new Date().getFullYear()} RentAllControl. Todos os direitos reservados.
           </p>
           <div className="flex gap-4 text-sm text-muted-foreground">
             <Link href="#" className="hover:text-foreground">Termos</Link>

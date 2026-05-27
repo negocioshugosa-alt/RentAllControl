@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       value: price,
       cycle: "MONTHLY",
       nextDueDate: nextDueDate,
-      description: `Assinatura Plano ${plan === "pro" ? "Pro" : "Essencial"} - RentFlow`,
+      description: `Assinatura Plano ${plan === "pro" ? "Pro" : "Essencial"} - RentAllControl`,
       externalReference: companyId,
     });
 

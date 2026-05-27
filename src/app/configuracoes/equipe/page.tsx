@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // src/app/configuracoes/equipe/page.tsx
 import { useState } from "react";
@@ -85,7 +85,7 @@ export default function EquipePage() {
 
       if (error) throw error;
 
-      const origin = typeof window !== "undefined" ? window.location.origin : "https://rentflow.com.br";
+      const origin = typeof window !== "undefined" ? window.location.origin : "https://RentAllControl.com.br";
       return `${origin}/invite/${token}`;
     },
     onSuccess: (link) => {
@@ -367,7 +367,7 @@ export default function EquipePage() {
               <tbody>
                 {invites.map((inv: any) => {
                   const isExpired = new Date(inv.expires_at) < new Date();
-                  const inviteLink = `${typeof window !== "undefined" ? window.location.origin : "https://rentflow.com.br"}/invite/${inv.token}`;
+                  const inviteLink = `${typeof window !== "undefined" ? window.location.origin : "https://RentAllControl.com.br"}/invite/${inv.token}`;
                   return (
                     <tr key={inv.id} className="border-t hover:bg-muted/5 transition-colors">
                       <td className="px-6 py-4 font-medium capitalize">

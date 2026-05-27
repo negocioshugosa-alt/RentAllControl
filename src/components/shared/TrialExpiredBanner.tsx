@@ -1,4 +1,4 @@
-// src/components/shared/TrialExpiredBanner.tsx
+﻿// src/components/shared/TrialExpiredBanner.tsx
 import Link from "next/link";
 import { AlertTriangle, CreditCard } from "lucide-react";
 
@@ -8,7 +8,7 @@ export function TrialExpiredBanner() {
       <div className="flex items-center gap-2">
         <AlertTriangle className="w-4 h-4 text-white animate-pulse" />
         <span>
-          Seu período de testes de 30 dias terminou. O <strong>RentFlow</strong> está em <strong>Modo Leitura e Relatórios</strong>.
+          Seu período de testes de 30 dias terminou. O <strong>RentAllControl</strong> está em <strong>Modo Leitura e Relatórios</strong>.
         </span>
       </div>
       <Link

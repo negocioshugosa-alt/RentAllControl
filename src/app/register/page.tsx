@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 // src/app/register/page.tsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -58,7 +58,7 @@ export default function RegisterPage() {
           <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-display font-bold text-xl">RentFlow</span>
+          <span className="font-display font-bold text-xl">RentAllControl</span>
         </div>
 
         <div className="bg-card rounded-2xl border shadow-sm p-8">

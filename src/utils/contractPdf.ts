@@ -141,7 +141,7 @@ export async function generateContractPdf(
   y += 20;
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
-  addText(`Documento gerado em ${formatDate(new Date(), "dd/MM/yyyy HH:mm")} via RentFlow`, W / 2, y, { align: "center" });
+  addText(`Documento gerado em ${formatDate(new Date(), "dd/MM/yyyy HH:mm")} via RentAllControl`, W / 2, y, { align: "center" });
 
   doc.save(`contrato-${contract.contract_number}.pdf`);
 }

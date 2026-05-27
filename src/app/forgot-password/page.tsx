@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 // src/app/forgot-password/page.tsx
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
           <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="font-display font-bold">RentFlow</span>
+          <span className="font-display font-bold">RentAllControl</span>
         </div>
 
         {sent ? (

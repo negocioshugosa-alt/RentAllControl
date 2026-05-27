@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // src/app/configuracoes/assinatura/page.tsx
 import { useState, useEffect } from "react";
@@ -181,7 +181,7 @@ export default function AssinaturaPage() {
 
   return (
     <div className="flex flex-col flex-1">
-      <Header title="Assinatura & Plano" subtitle="Gerencie as mensalidades e recursos do seu RentFlow" />
+      <Header title="Assinatura & Plano" subtitle="Gerencie as mensalidades e recursos do seu RentAllControl" />
 
       <div className="flex-1 p-6 space-y-6 max-w-4xl">
         {/* Status atual da conta */}
@@ -260,7 +260,7 @@ export default function AssinaturaPage() {
               </div>
             </div>
             <div className="text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-lg mt-3 text-center">
-              RentFlow ERP Locadoras SaaS
+              RentAllControl ERP Locadoras SaaS
             </div>
           </div>
         </div>
@@ -269,7 +269,7 @@ export default function AssinaturaPage() {
         {!hasSubscription && (
           <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-6">
             <div className="border-b pb-4">
-              <h3 className="text-lg font-bold font-display">Ativar Assinatura RentFlow</h3>
+              <h3 className="text-lg font-bold font-display">Ativar Assinatura RentAllControl</h3>
               <p className="text-sm text-muted-foreground mt-0.5">Selecione seu plano e insira os dados de cobrança para ativar a conta.</p>
             </div>
 

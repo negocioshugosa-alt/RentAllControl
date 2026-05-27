@@ -13,6 +13,7 @@ import { formatCurrency, EQUIPMENT_STATUS, EQUIPMENT_CATEGORIES } from "@/lib/ut
 import { toast } from "sonner";
 import type { Equipment } from "@/types";
 
+
 async function fetchEquipment(companyId: string, search: string, status: string) {
   const supabase = createClient();
   let query = supabase
@@ -71,8 +72,23 @@ export default function EquipamentosPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      
-      await assertCanWrite(companyId!);
+
+      // Verificação de acesso: bloqueia se trial expirado ou pagamento vencido
+      const { data: company } = await supabase
+        .from("companies")
+        .select("subscription_status, subscription_trial_ends_at")
+        .eq("id", companyId!)
+        .single();
+      if (company) {
+        const status = company.subscription_status;
+        const isPastDue = status === "past_due";
+        const isTrialExpired =
+          status === "trialing" &&
+          company.subscription_trial_ends_at &&
+          new Date(company.subscription_trial_ends_at) < new Date();
+        if (isPastDue) throw new Error("Acesso suspenso: regularize o pagamento para liberar o sistema.");
+        if (isTrialExpired) throw new Error("Período de testes expirado: ative uma assinatura para continuar.");
+      }
 
       const { data: equipment } = await supabase
         .from("equipment")

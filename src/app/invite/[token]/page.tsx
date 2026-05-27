@@ -1,13 +1,14 @@
 "use client";
 
 // src/app/invite/[token]/page.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Loader2, User, Lock, Mail, Users, CheckCircle } from "lucide-react";
 
-export default function InvitePage({ params }: { params: { token: string } }) {
+export default function InvitePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = use(params);
   const router = useRouter();
   const [invite, setInvite] = useState<any>(null);
   const [company, setCompany] = useState<any>(null);
@@ -29,7 +30,7 @@ export default function InvitePage({ params }: { params: { token: string } }) {
         const { data: inv, error: invError } = await supabase
           .from("company_invites")
           .select("*, companies(*)")
-          .eq("token", params.token)
+          .eq("token", token)
           .single();
 
         if (invError || !inv) {
@@ -51,7 +52,7 @@ export default function InvitePage({ params }: { params: { token: string } }) {
     }
 
     verifyInvite();
-  }, [params.token]);
+  }, [token]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
