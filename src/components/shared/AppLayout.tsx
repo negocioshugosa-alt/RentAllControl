@@ -47,45 +47,9 @@ export async function AppLayout({ children }: { children: React.ReactNode }) {
   const headerList = await headers();
   const pathname = headerList.get("x-pathname") || "";
 
-  // If past due and NOT on the subscription page, block full access
-  if (isPastDue && pathname !== "/configuracoes/assinatura") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <div className="max-w-md w-full p-8 rounded-2xl border bg-card text-center space-y-6 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-red-500 to-rose-600" />
-          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center mx-auto">
-            <AlertTriangle className="w-8 h-8 text-red-500 animate-pulse" />
-          </div>
-          <h2 className="text-2xl font-bold text-foreground">Assinatura Suspensa</h2>
-          <p className="text-muted-foreground text-sm">
-            Identificamos uma pendência financeira no pagamento de sua mensalidade do <strong>RentAllControl</strong>.
-          </p>
-          <div className="p-4 rounded-xl bg-muted/50 border text-left text-xs space-y-2">
-            <p className="font-semibold text-foreground">Como regularizar:</p>
-            <p className="text-muted-foreground">
-              1. Acesse o painel de assinatura clicando no botão abaixo.
-            </p>
-            <p className="text-muted-foreground">
-              2. Obtenha a segunda via da fatura (Pix copia e cola ou código de barras).
-            </p>
-            <p className="text-muted-foreground">
-              3. O acesso será reestabelecido automaticamente após a confirmação.
-            </p>
-          </div>
-          <Link
-            href="/configuracoes/assinatura"
-            className="block w-full py-3 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-center text-sm hover:bg-primary/90 transition-colors shadow-sm"
-          >
-            Acessar Painel de Assinatura
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-screen w-full">
-      {isTrialExpired && <TrialExpiredBanner />}
+      {(isTrialExpired || isPastDue) && <TrialExpiredBanner isPastDue={isPastDue} />}
       <DashboardLayoutClient
         companyName={company?.name}
         userName={profile?.name}

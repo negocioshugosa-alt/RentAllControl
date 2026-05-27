@@ -173,7 +173,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
 
   async function onSubmit(data: FormData) {
     if (isReadOnly) {
-      toast.error("O período de testes expirou. Ative sua assinatura para salvar alterações.");
+      toast.error("Sua assinatura ou período de testes expirou. Ative ou regularize sua assinatura para realizar alterações.");
       return;
     }
 

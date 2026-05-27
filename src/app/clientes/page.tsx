@@ -52,7 +52,7 @@ export default function ClientesPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (isReadOnly) {
-        throw new Error("O período de testes expirou. Ative sua assinatura para realizar exclusões.");
+        throw new Error("Sua assinatura ou período de testes expirou. Ative ou regularize sua assinatura para realizar alterações.");
       }
       const supabase = createClient();
       const { error } = await supabase.from("clients").delete().eq("id", id);

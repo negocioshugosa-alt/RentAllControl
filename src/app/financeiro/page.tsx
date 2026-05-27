@@ -86,7 +86,7 @@ export default function FinanceiroPage() {
   const markPaidMutation = useMutation({
     mutationFn: async (id: string) => {
       if (isReadOnly) {
-        throw new Error("O período de testes expirou. Ative sua assinatura para realizar alterações.");
+        throw new Error("Sua assinatura ou período de testes expirou. Ative ou regularize sua assinatura para realizar alterações.");
       }
       const supabase = createClient();
       const { error } = await supabase
@@ -106,7 +106,7 @@ export default function FinanceiroPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (isReadOnly) {
-        throw new Error("O período de testes expirou. Ative sua assinatura para realizar exclusões.");
+        throw new Error("Sua assinatura ou período de testes expirou. Ative ou regularize sua assinatura para realizar alterações.");
       }
       const supabase = createClient();
       const { error } = await supabase.from("transactions").delete().eq("id", id);

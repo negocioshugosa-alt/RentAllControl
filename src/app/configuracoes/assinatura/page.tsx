@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 // src/app/configuracoes/assinatura/page.tsx
 import { useState, useEffect } from "react";
@@ -46,7 +46,7 @@ export default function AssinaturaPage() {
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return null;
 
       const { data: prof } = await supabase
         .from("profiles")
@@ -56,19 +56,23 @@ export default function AssinaturaPage() {
 
       if (prof) {
         setProfile(prof);
-        setCompany((prof as any).companies);
-        setCnpj((prof as any).companies.cnpj || "");
+        const comp = (prof as any).companies;
+        setCompany(comp);
+        setCnpj(comp.cnpj || "");
         setBillingEmail(prof.email || "");
 
-        if ((prof as any).companies.asaas_customer_id) {
-          loadInvoices();
+        if (comp.asaas_customer_id) {
+          const loadedInvoices = await loadInvoices();
+          return { profile: prof, company: comp, invoices: loadedInvoices };
         }
+        return { profile: prof, company: comp, invoices: [] };
       }
     } catch (e: any) {
       toast.error("Erro ao carregar dados da empresa: " + e.message);
     } finally {
       setLoading(false);
     }
+    return null;
   }
 
   async function loadInvoices() {
@@ -78,12 +82,14 @@ export default function AssinaturaPage() {
       if (res.ok) {
         const data = await res.json();
         setInvoices(data);
+        return data;
       }
     } catch (e) {
       console.error("Erro ao buscar faturas:", e);
     } finally {
       setInvoicesLoading(false);
     }
+    return [];
   }
 
   useEffect(() => {
@@ -115,7 +121,18 @@ export default function AssinaturaPage() {
       if (!res.ok) throw new Error(result.error || "Erro ao assinar");
 
       toast.success("Assinatura criada com sucesso! Carregando faturas...");
-      loadData();
+      
+      const loaded = await loadData();
+      if (loaded && loaded.invoices && loaded.invoices.length > 0) {
+        const pendingInvoice = loaded.invoices.find((inv: any) => inv.status === "pendente");
+        if (pendingInvoice) {
+          if (billingType === "PIX") {
+            await showPixModal(pendingInvoice.id);
+          } else if (billingType === "BOLETO") {
+            await showBoletoModal(pendingInvoice.id, pendingInvoice.bankSlipUrl);
+          }
+        }
+      }
     } catch (err: any) {
       toast.error(err.message || "Ocorreu um erro ao ativar o plano.");
     } finally {

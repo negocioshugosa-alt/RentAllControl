@@ -63,7 +63,7 @@ export default function ContratosPage() {
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       if (isReadOnly) {
-        throw new Error("O período de testes expirou. Ative sua assinatura para realizar alterações.");
+        throw new Error("Sua assinatura ou período de testes expirou. Ative ou regularize sua assinatura para realizar alterações.");
       }
       const supabase = createClient();
       // Fetch contract details to get the equipment ID before updating
