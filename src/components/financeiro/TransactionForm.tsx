@@ -11,6 +11,7 @@ import { TRANSACTION_CATEGORIES } from "@/lib/utils";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { toast } from "sonner";
 import type { Transaction } from "@/types";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const schema = z.object({
   type: z.enum(["receita", "despesa"]),
@@ -126,6 +127,7 @@ function SearchSelect({
 
 export function TransactionForm({ transaction, companyId, defaultType = "receita", onClose, onSuccess }: Props) {
   const isEdit = !!transaction;
+  const { isReadOnly } = useSubscription();
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select", companyId],
@@ -188,6 +190,11 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
   const supplierId = watch("supplier_id");
 
   async function onSubmit(data: FormData) {
+    if (isReadOnly) {
+      toast.error("O período de testes expirou. Ative sua assinatura para realizar lançamentos.");
+      return;
+    }
+
     const supabase = createClient();
     const payload = {
       ...data,

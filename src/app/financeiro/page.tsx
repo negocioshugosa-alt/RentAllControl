@@ -11,6 +11,7 @@ import { TransactionForm } from "@/components/financeiro/TransactionForm";
 import { formatCurrency, formatDate, TRANSACTION_CATEGORIES, isOverdue } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Transaction } from "@/types";
+import { useSubscription } from "@/hooks/useSubscription";
 
 async function getCompanyId() {
   const supabase = createClient();
@@ -72,6 +73,7 @@ export default function FinanceiroPage() {
   const [defaultType, setDefaultType] = useState<"receita" | "despesa">("receita");
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { isReadOnly } = useSubscription();
 
   const { companyId } = useCompanyId();
 
@@ -83,6 +85,9 @@ export default function FinanceiroPage() {
 
   const markPaidMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (isReadOnly) {
+        throw new Error("O período de testes expirou. Ative sua assinatura para realizar alterações.");
+      }
       const supabase = createClient();
       const { error } = await supabase
         .from("transactions")
@@ -95,10 +100,14 @@ export default function FinanceiroPage() {
       router.refresh();
       toast.success("Lançamento marcado como pago!");
     },
+    onError: (err: any) => toast.error(err.message || "Erro ao atualizar lançamento"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (isReadOnly) {
+        throw new Error("O período de testes expirou. Ative sua assinatura para realizar exclusões.");
+      }
       const supabase = createClient();
       const { error } = await supabase.from("transactions").delete().eq("id", id);
       if (error) throw error;
@@ -108,6 +117,7 @@ export default function FinanceiroPage() {
       router.refresh();
       toast.success("Lançamento removido");
     },
+    onError: (err: any) => toast.error(err.message || "Erro ao remover lançamento"),
   });
 
   const totalReceita = transactions.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);

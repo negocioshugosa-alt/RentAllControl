@@ -11,6 +11,7 @@ import { ContractForm } from "@/components/contratos/ContractForm";
 import { formatCurrency, formatDate, CONTRACT_STATUS } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Contract } from "@/types";
+import { useSubscription } from "@/hooks/useSubscription";
 
 async function fetchContracts(companyId: string, search: string, status: string) {
   const supabase = createClient();
@@ -44,11 +45,12 @@ async function getCompanyId() {
 
 export default function ContratosPage() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ativo");
+  const [statusFilter, setStatusFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Contract | null>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { isReadOnly } = useSubscription();
 
   const { companyId } = useCompanyId();
 
@@ -60,6 +62,9 @@ export default function ContratosPage() {
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      if (isReadOnly) {
+        throw new Error("O período de testes expirou. Ative sua assinatura para realizar alterações.");
+      }
       const supabase = createClient();
       // Fetch contract details to get the equipment ID before updating
       const { data: contract } = await supabase
@@ -81,6 +86,7 @@ export default function ContratosPage() {
       router.refresh();
       toast.success("Contrato atualizado");
     },
+    onError: (err: any) => toast.error(err.message || "Erro ao atualizar contrato"),
   });
 
   return (

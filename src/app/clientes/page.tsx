@@ -11,6 +11,7 @@ import { ClientForm } from "@/components/clientes/ClientForm";
 import { formatDocument, formatPhone } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Client } from "@/types";
+import { useSubscription } from "@/hooks/useSubscription";
 
 async function fetchClients(companyId: string, search: string) {
   const supabase = createClient();
@@ -38,6 +39,7 @@ export default function ClientesPage() {
   const [editItem, setEditItem] = useState<Client | null>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { isReadOnly } = useSubscription();
 
   const { companyId } = useCompanyId();
 
@@ -49,6 +51,9 @@ export default function ClientesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (isReadOnly) {
+        throw new Error("O período de testes expirou. Ative sua assinatura para realizar exclusões.");
+      }
       const supabase = createClient();
       const { error } = await supabase.from("clients").delete().eq("id", id);
       if (error) throw error;
@@ -58,7 +63,7 @@ export default function ClientesPage() {
       router.refresh();
       toast.success("Cliente removido");
     },
-    onError: () => toast.error("Erro ao remover cliente"),
+    onError: (err: any) => toast.error(err.message || "Erro ao remover cliente"),
   });
 
   return (

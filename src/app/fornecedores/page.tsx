@@ -10,6 +10,7 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { formatDocument, formatPhone } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Supplier } from "@/types";
+import { useSubscription } from "@/hooks/useSubscription";
 
 async function fetchSuppliers(companyId: string, search: string) {
   const supabase = createClient();
@@ -35,6 +36,7 @@ export default function FornecedoresPage() {
   const queryClient = useQueryClient();
   const { companyId } = useCompanyId();
   const router = useRouter();
+  const { isReadOnly } = useSubscription();
 
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ["fornecedores", companyId, search],
@@ -44,6 +46,9 @@ export default function FornecedoresPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (isReadOnly) {
+        throw new Error("O período de testes expirou. Ative sua assinatura para realizar exclusões.");
+      }
       const supabase = createClient();
       const { error } = await supabase.from("suppliers").delete().eq("id", id);
       if (error) throw error;
@@ -53,7 +58,7 @@ export default function FornecedoresPage() {
       router.refresh();
       toast.success("Fornecedor removido");
     },
-    onError: () => toast.error("Erro ao remover fornecedor"),
+    onError: (err: any) => toast.error(err.message || "Erro ao remover fornecedor"),
   });
 
   return (

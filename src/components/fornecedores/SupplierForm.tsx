@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatCpfCnpj, unformatDocument } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Supplier } from "@/types";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const SUPPLIER_CATEGORIES = [
   "Combustível", "Manutenção", "Pneus", "Peças", "Seguro",
@@ -49,6 +50,7 @@ interface Props {
 
 export function SupplierForm({ supplier, companyId, onClose, onSuccess }: Props) {
   const isEdit = !!supplier;
+  const { isReadOnly } = useSubscription();
 
   const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -68,6 +70,11 @@ export function SupplierForm({ supplier, companyId, onClose, onSuccess }: Props)
   });
 
   async function onSubmit(data: FormData) {
+    if (isReadOnly) {
+      toast.error("O período de testes expirou. Ative sua assinatura para realizar cadastros.");
+      return;
+    }
+
     const supabase = createClient();
     const payload = { ...data, document: data.document ? unformatDocument(data.document) : null, company_id: companyId, is_active: true };
 

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatCpfCnpj, unformatDocument } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Client } from "@/types";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const schema = z.object({
   type: z.enum(["pf", "pj"]),
@@ -46,6 +47,7 @@ const STATES = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG"
 
 export function ClientForm({ client, companyId, onClose, onSuccess }: Props) {
   const isEdit = !!client;
+  const { isReadOnly } = useSubscription();
 
   const { register, handleSubmit, watch, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -65,6 +67,11 @@ export function ClientForm({ client, companyId, onClose, onSuccess }: Props) {
   });
 
   async function onSubmit(data: FormData) {
+    if (isReadOnly) {
+      toast.error("O período de testes expirou. Ative sua assinatura para realizar cadastros.");
+      return;
+    }
+
     const supabase = createClient();
     const payload = { ...data, document: unformatDocument(data.document), company_id: companyId };
 
