@@ -217,11 +217,15 @@ export function LoginAlertPopup() {
     },
   });
 
+  // Check sessionStorage to see if popup was already shown to prevent fetching and showing again
+  const popupShownKey = companyId ? `alerts_popup_shown_${companyId}` : "";
+  const isPopupAlreadyShown = typeof window !== "undefined" && !!companyId && !!sessionStorage.getItem(popupShownKey);
+
   // Fetch login-specific data
   const { data, isLoading } = useQuery({
     queryKey: ["login-alerts", companyId],
     queryFn: () => fetchLoginAlerts(companyId!),
-    enabled: !!companyId && hasChecked,
+    enabled: !!companyId && hasChecked && !isPopupAlreadyShown,
   });
 
   // Auto-generate alerts on mount (once per session)
@@ -247,15 +251,18 @@ export function LoginAlertPopup() {
 
   // Show popup when data arrives and there are items
   useEffect(() => {
-    if (!data) return;
+    if (!data || isPopupAlreadyShown) return;
     const total =
       data.contractAlerts.length +
       data.payableAlerts.length +
       data.receivableAlerts.length;
     if (total > 0) {
       setOpen(true);
+      if (typeof window !== "undefined" && popupShownKey) {
+        sessionStorage.setItem(popupShownKey, "true");
+      }
     }
-  }, [data]);
+  }, [data, isPopupAlreadyShown, popupShownKey]);
 
   if (!open || !data) return null;
 
