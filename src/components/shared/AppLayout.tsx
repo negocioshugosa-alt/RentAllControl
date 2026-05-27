@@ -58,7 +58,7 @@ export async function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <h2 className="text-2xl font-bold text-foreground">Assinatura Suspensa</h2>
           <p className="text-muted-foreground text-sm">
-            Identificamos uma pendência financeira no pagamento de sua mensalidade do <strong>RentFlow</strong>.
+            Identificamos uma pendência financeira no pagamento de sua mensalidade do <strong>RentAllControl</strong>.
           </p>
           <div className="p-4 rounded-xl bg-muted/50 border text-left text-xs space-y-2">
             <p className="font-semibold text-foreground">Como regularizar:</p>
