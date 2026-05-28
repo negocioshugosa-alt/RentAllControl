@@ -102,8 +102,8 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     const eqWs = eqWb.addWorksheet(sheetName);
 
     // Define columns
-    const eqHeaders = ["Código", "Data Pagto/Venc", "Tipo", "Descrição", "Categoria", "Cliente/Fornecedor", "Contrato", "Status", "Valor (R$)"];
-    eqWs.columns = eqHeaders.map((h) => ({ header: h, key: h, width: h === "Descrição" ? 30 : h === "Valor (R$)" ? 15 : h === "Cliente/Fornecedor" ? 22 : h === "Contrato" ? 18 : 16 }));
+    const eqHeaders = ["Código", "Vencimento", "Pagamento/Recebimento", "Tipo", "Descrição", "Categoria", "Cliente/Fornecedor", "Contrato", "Status", "Valor (R$)"];
+    eqWs.columns = eqHeaders.map((h) => ({ header: h, key: h, width: h === "Descrição" ? 30 : h === "Valor (R$)" ? 15 : h === "Cliente/Fornecedor" ? 22 : h === "Contrato" ? 18 : h === "Pagamento/Recebimento" ? 20 : 16 }));
     eqWs.getRow(1).font = { bold: true };
 
     let currentRow = 2;
@@ -122,7 +122,8 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
       for (const tx of txs) {
         const row = eqWs.addRow({
           "Código": eq.code,
-          "Data Pagto/Venc": formatDate(tx.txDate),
+          "Vencimento": formatDate(tx.due_date),
+          "Pagamento/Recebimento": tx.paid_date ? formatDate(tx.paid_date) : "—",
           "Tipo": tx.type === "receita" ? "Receita" : "Despesa",
           "Descrição": tx.description || "—",
           "Categoria": categoryLabels[tx.category] || tx.category,
@@ -693,9 +694,10 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
 
       autoTable(doc, {
         startY: currentY,
-        head: [["Data", "Tipo", "Descrição", "Categoria", "Cliente/Fornecedor", "Contrato", "Status", "Valor"]],
+        head: [["Vencimento", "Pagamento", "Tipo", "Descrição", "Categoria", "Cliente/Fornecedor", "Contrato", "Status", "Valor"]],
         body: txs.map((tx) => [
-          formatDate(tx.txDate),
+          formatDate(tx.due_date),
+          tx.paid_date ? formatDate(tx.paid_date) : "—",
           tx.type === "receita" ? "Receita" : "Despesa",
           tx.description || "—",
           categoryLabels[tx.category] || tx.category,
@@ -705,15 +707,15 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
           formatCurrency(Number(tx.amount))
         ]),
         foot: [
-          ["", "", "", "", "Total Receitas", "Total Despesas", "Lucro Líquido", "ROI (%)"],
-          ["", "", "", "", formatCurrency(revenue), formatCurrency(costs), formatCurrency(profit), `${roi.toFixed(1)}%`]
+          ["", "", "", "", "", "Total Receitas", "Total Despesas", "Lucro Líquido", "ROI (%)"],
+          ["", "", "", "", "", formatCurrency(revenue), formatCurrency(costs), formatCurrency(profit), `${roi.toFixed(1)}%`]
         ],
         theme: "striped",
         headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
         footStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontSize: 8, fontStyle: "bold" },
         bodyStyles: { fontSize: 7.5, valign: "middle" },
         didParseCell: function(data) {
-          if (data.section === 'body' && data.column.index === 1) {
+          if (data.section === 'body' && data.column.index === 2) {
             if (data.cell.raw === 'Receita') {
               data.cell.styles.textColor = [22, 163, 74];
               data.cell.styles.fontStyle = 'bold';
@@ -723,10 +725,10 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
             }
           }
           if (data.section === 'foot') {
-            if (data.column.index < 4) {
+            if (data.column.index < 5) {
               data.cell.styles.fillColor = [255, 255, 255];
             }
-            if (data.row.index === 1 && data.column.index === 6) {
+            if (data.row.index === 1 && data.column.index === 7) {
               if (profit >= 0) {
                 data.cell.styles.textColor = [22, 163, 74];
               } else {

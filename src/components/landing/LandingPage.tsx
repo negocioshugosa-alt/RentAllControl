@@ -76,8 +76,8 @@ const segments = [
   },
   {
     icon: Sparkles,
-    title: "Qualquer Ativo Físico",
-    desc: "Aluga brinquedos, contêineres, vestuário, quadras ou outros itens? O RentAllControl é personalizável para o seu nicho exato.",
+    title: "Seu Nicho Exato",
+    desc: "Aluga caçambas, ferramentas, decorações de eventos, brinquedos, vestuário ou contêineres? O sistema é 100% parametrizável para o seu modelo sem limitações.",
     tag: "Flexibilidade Total",
     highlighted: true
   }
@@ -201,9 +201,9 @@ export function LandingPage() {
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-            Esqueça planilhas manuais. O RentAllControl centraliza equipamentos, contratos, financeiro
+            Esqueça planilhas manuais. O RentAllControl centraliza frotas, contratos, financeiro
             e calcula o <strong className="text-slate-200">ROI exato por ativo</strong> automaticamente.
-            Descubra quais itens dão lucro real.
+            Uma plataforma <strong className="text-blue-400">universal e 100% configurável</strong> para gerenciar locação de qualquer ativo físico no mercado.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
@@ -389,10 +389,10 @@ export function LandingPage() {
               Flexibilidade Absoluta
             </span>
             <h2 className="font-display text-3xl md:text-4.5xl font-black tracking-tight mt-6 mb-4">
-              Qualquer que seja seu ativo, nós controlamos
+              Mapeado para qualquer tipo de locação física
             </h2>
-            <p className="text-slate-400 max-w-3xl mx-auto text-base sm:text-lg">
-              Nosso sistema foi estruturado de forma genérica e personalizável para que você possa definir seus próprios parâmetros de locação. Conheça alguns dos casos de uso de nossos parceiros:
+            <p className="text-slate-400 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed">
+              O RentAllControl foi desenhado sob uma arquitetura genérica de ativos. Isso significa que <strong className="text-slate-200">se o seu negócio aluga itens físicos, o sistema se adapta perfeitamente a ele</strong>. Os segmentos abaixo representam apenas alguns exemplos de nossa flexibilidade:
             </p>
           </div>
 
