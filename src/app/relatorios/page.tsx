@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
@@ -102,7 +102,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     const eqWs = eqWb.addWorksheet(sheetName);
 
     // Define columns
-    const eqHeaders = ["Código", "Tipo", "Descrição", "Categoria", "Cliente/Fornecedor", "Contrato", "Status", "Valor (R$)"];
+    const eqHeaders = ["Código", "Data Pagto/Venc", "Tipo", "Descrição", "Categoria", "Cliente/Fornecedor", "Contrato", "Status", "Valor (R$)"];
     eqWs.columns = eqHeaders.map((h) => ({ header: h, key: h, width: h === "Descrição" ? 30 : h === "Valor (R$)" ? 15 : h === "Cliente/Fornecedor" ? 22 : h === "Contrato" ? 18 : 16 }));
     eqWs.getRow(1).font = { bold: true };
 
@@ -122,6 +122,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
       for (const tx of txs) {
         const row = eqWs.addRow({
           "Código": eq.code,
+          "Data Pagto/Venc": formatDate(tx.txDate),
           "Tipo": tx.type === "receita" ? "Receita" : "Despesa",
           "Descrição": tx.description || "—",
           "Categoria": categoryLabels[tx.category] || tx.category,
@@ -151,6 +152,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
       // Add summary labels row
       const labelsRow = eqWs.addRow({
         "Código": "",
+        "Data Pagto/Venc": "",
         "Tipo": "",
         "Descrição": "",
         "Categoria": "",
@@ -168,6 +170,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
       // Add summary values row
       const valuesRow = eqWs.addRow({
         "Código": "",
+        "Data Pagto/Venc": "",
         "Tipo": "",
         "Descrição": "",
         "Categoria": "",
@@ -690,8 +693,9 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
 
       autoTable(doc, {
         startY: currentY,
-        head: [["Tipo", "Descrição", "Categoria", "Cliente/Fornecedor", "Contrato", "Status", "Valor"]],
+        head: [["Data", "Tipo", "Descrição", "Categoria", "Cliente/Fornecedor", "Contrato", "Status", "Valor"]],
         body: txs.map((tx) => [
+          formatDate(tx.txDate),
           tx.type === "receita" ? "Receita" : "Despesa",
           tx.description || "—",
           categoryLabels[tx.category] || tx.category,
@@ -701,15 +705,15 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
           formatCurrency(Number(tx.amount))
         ]),
         foot: [
-          ["", "", "", "Total Receitas", "Total Despesas", "Lucro Líquido", "ROI (%)"],
-          ["", "", "", formatCurrency(revenue), formatCurrency(costs), formatCurrency(profit), `${roi.toFixed(1)}%`]
+          ["", "", "", "", "Total Receitas", "Total Despesas", "Lucro Líquido", "ROI (%)"],
+          ["", "", "", "", formatCurrency(revenue), formatCurrency(costs), formatCurrency(profit), `${roi.toFixed(1)}%`]
         ],
         theme: "striped",
         headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
         footStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontSize: 8, fontStyle: "bold" },
         bodyStyles: { fontSize: 7.5, valign: "middle" },
         didParseCell: function(data) {
-          if (data.section === 'body' && data.column.index === 0) {
+          if (data.section === 'body' && data.column.index === 1) {
             if (data.cell.raw === 'Receita') {
               data.cell.styles.textColor = [22, 163, 74];
               data.cell.styles.fontStyle = 'bold';
@@ -719,10 +723,10 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
             }
           }
           if (data.section === 'foot') {
-            if (data.column.index < 3) {
+            if (data.column.index < 4) {
               data.cell.styles.fillColor = [255, 255, 255];
             }
-            if (data.row.index === 1 && data.column.index === 5) {
+            if (data.row.index === 1 && data.column.index === 6) {
               if (profit >= 0) {
                 data.cell.styles.textColor = [22, 163, 74];
               } else {
