@@ -57,6 +57,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const overdueReceivables = mappedTxs.filter((t) => t.type === "receita" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
   const overduePayables = mappedTxs.filter((t) => t.type === "despesa" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
 
+  const next30DaysDate = new Date();
+  next30DaysDate.setDate(next30DaysDate.getDate() + 30);
+  const next30DaysStr = next30DaysDate.toISOString().split("T")[0];
+
+  const upcoming30dReceivables = txs
+    .filter((t) => t.type === "receita" && t.status === "pendente" && t.due_date >= todayStr && t.due_date <= next30DaysStr)
+    .reduce((s, t) => s + Number(t.amount), 0);
+
   const eq = equipment || [];
   const rented = eq.filter((e) => e.status === "alugado").length;
   const available = eq.filter((e) => e.status === "disponivel").length;
@@ -74,6 +82,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     maintenance,
     occupationRate: eq.length > 0 ? (rented / eq.length) * 100 : 0,
     activeContracts: contracts?.length || 0,
+    upcoming30dReceivables,
   };
 
   return (

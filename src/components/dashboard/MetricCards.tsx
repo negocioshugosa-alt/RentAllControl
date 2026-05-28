@@ -1,8 +1,8 @@
 "use client";
 // src/components/dashboard/MetricCards.tsx
 import {
-  TrendingUp, TrendingDown, DollarSign, Wrench,
-  FileText, AlertTriangle, Percent, Activity,
+  TrendingUp, TrendingDown, DollarSign,
+  FileText, AlertTriangle, Percent, Activity, Calendar
 } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ interface Metrics {
   maintenance: number;
   occupationRate: number;
   activeContracts: number;
+  upcoming30dReceivables: number;
 }
 
 interface MetricCardProps {
@@ -63,19 +64,13 @@ function MetricCard({ title, value, icon: Icon, trend, trendLabel, color = "blue
 export function MetricCards({ metrics }: { metrics: Metrics }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Linha 1: Financeiro Positivo e Contratos (Harmonia Operacional) */}
       <MetricCard
         title="Receita do Mês"
         value={formatCurrency(metrics.monthRevenue)}
         icon={TrendingUp}
         color="green"
-        trendLabel="Este mês"
-      />
-      <MetricCard
-        title="Despesas do Mês"
-        value={formatCurrency(metrics.monthExpenses)}
-        icon={TrendingDown}
-        color="red"
-        trendLabel="Este mês"
+        trendLabel="Receita realizada no período"
       />
       <MetricCard
         title="Lucro Líquido"
@@ -85,39 +80,48 @@ export function MetricCards({ metrics }: { metrics: Metrics }) {
         trendLabel="Receita − Despesas"
       />
       <MetricCard
-        title="Taxa de Ocupação"
-        value={formatPercent(metrics.occupationRate)}
-        icon={Percent}
-        color="blue"
-        trendLabel={`${metrics.rented} de ${metrics.totalEquipment} equipamentos`}
-      />
-      <MetricCard
-        title="Equipamentos"
-        value={String(metrics.totalEquipment)}
-        icon={Wrench}
+        title="Previsão (Próximos 30 dias)"
+        value={formatCurrency(metrics.upcoming30dReceivables)}
+        icon={Calendar}
         color="purple"
-        trendLabel={`${metrics.available} disponíveis`}
+        trendLabel="Recebíveis pendentes"
       />
       <MetricCard
         title="Contratos Ativos"
         value={String(metrics.activeContracts)}
         icon={FileText}
         color="blue"
-        trendLabel="Em andamento"
+        trendLabel="Contratos em andamento"
+      />
+
+      {/* Linha 2: Custos, Ocupação e Pendências (Harmonia de Gestão) */}
+      <MetricCard
+        title="Despesas do Mês"
+        value={formatCurrency(metrics.monthExpenses)}
+        icon={TrendingDown}
+        color="red"
+        trendLabel="Despesas pagas no período"
+      />
+      <MetricCard
+        title="Taxa de Ocupação"
+        value={formatPercent(metrics.occupationRate)}
+        icon={Percent}
+        color="blue"
+        trendLabel={`${metrics.rented} de ${metrics.totalEquipment} ativos`}
       />
       <MetricCard
         title="Inadimplência"
         value={formatCurrency(metrics.overdueReceivables)}
         icon={AlertTriangle}
         color="red"
-        trendLabel="Contas a receber vencidas"
+        trendLabel="Recebíveis em atraso"
       />
       <MetricCard
         title="Contas a Pagar Vencidas"
         value={formatCurrency(metrics.overduePayables)}
         icon={Activity}
         color="orange"
-        trendLabel="Pagamentos em atraso"
+        trendLabel="Despesas em atraso"
       />
     </div>
   );

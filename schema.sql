@@ -87,7 +87,7 @@ CREATE TABLE equipment (
   chassis VARCHAR(50),
   hourimeter DECIMAL(10,2) DEFAULT 0,
   km DECIMAL(10,2) DEFAULT 0,
-  status VARCHAR(20) DEFAULT 'disponivel' CHECK (status IN ('disponivel','alugado','manutencao','inativo')),
+  status VARCHAR(20) DEFAULT 'disponivel' CHECK (status IN ('disponivel','alugado','manutencao','inativo','vendido')),
   -- Financeiro
   purchase_value DECIMAL(12,2),
   financing_value DECIMAL(12,2),
