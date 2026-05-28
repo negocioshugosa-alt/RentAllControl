@@ -33,13 +33,7 @@ const companySchema = z.object({
   }
 });
 
-const asaasSchema = z.object({
-  asaas_api_key: z.string().optional(),
-  asaas_wallet_id: z.string().optional(),
-});
-
 type CompanyData = z.infer<typeof companySchema>;
-type AsaasData = z.infer<typeof asaasSchema>;
 
 async function getProfile() {
   const supabase = createClient();
@@ -54,8 +48,7 @@ async function getProfile() {
 }
 
 export default function ConfiguracoesPage() {
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [activeTab, setActiveTab] = useState<"empresa" | "integracao" | "perfil">("empresa");
+  const [activeTab, setActiveTab] = useState<"empresa" | "perfil">("empresa");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -77,13 +70,7 @@ export default function ConfiguracoesPage() {
     },
   });
 
-  const asaasForm = useForm<AsaasData>({
-    resolver: zodResolver(asaasSchema),
-    values: {
-      asaas_api_key: company?.asaas_api_key || "",
-      asaas_wallet_id: company?.asaas_wallet_id || "",
-    },
-  });
+
 
   // Upload de logo
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -154,22 +141,10 @@ export default function ConfiguracoesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const saveAsaas = useMutation({
-    mutationFn: async (data: AsaasData) => {
-      const supabase = createClient();
-      const { error } = await supabase.from("companies").update(data).eq("id", company.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      toast.success("Integração Asaas salva!");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+
 
   const tabs = [
     { id: "empresa", label: "Empresa", icon: Building2, href: null },
-    { id: "integracao", label: "Integração Asaas", icon: Key, href: null },
     { id: "perfil", label: "Meu Perfil", icon: User, href: null },
     { id: "assinatura", label: "Plano / Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" },
     { id: "equipe", label: "Minha Equipe", icon: Users, href: "/configuracoes/equipe" },
@@ -341,70 +316,6 @@ export default function ConfiguracoesPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
-
-        {/* Asaas */}
-        {activeTab === "integracao" && (
-          <div className="space-y-4">
-            <div className="rounded-xl border bg-card p-6">
-              <div className="flex items-start gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                  <Key className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="font-semibold">Integração Asaas</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Configure sua chave de API para emitir cobranças via PIX, boleto e cartão.
-                  </p>
-                </div>
-              </div>
-
-              <form onSubmit={asaasForm.handleSubmit((d) => saveAsaas.mutate(d))} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Chave de API (access_token)</label>
-                  <div className="relative">
-                    <input
-                      {...asaasForm.register("asaas_api_key")}
-                      type={showApiKey ? "text" : "password"}
-                      className="input w-full pr-10 font-mono text-xs"
-                      placeholder="$aas_..."
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowApiKey(!showApiKey)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    >
-                      {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Wallet ID (opcional)</label>
-                  <input {...asaasForm.register("asaas_wallet_id")} className="input w-full font-mono text-xs" />
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={saveAsaas.isPending}
-                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4" />
-                    {saveAsaas.isPending ? "Salvando…" : "Salvar Configuração"}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <div className="rounded-xl border bg-card p-6">
-              <h3 className="font-semibold mb-2">Webhook Asaas</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Configure no Asaas para baixa automática de cobranças pagas.
-              </p>
-              <div className="bg-muted/50 rounded-lg px-4 py-3 font-mono text-xs break-all">
-                {typeof window !== "undefined" ? window.location.origin : "https://seu-app.vercel.app"}/api/webhooks/asaas
-              </div>
             </div>
           </div>
         )}

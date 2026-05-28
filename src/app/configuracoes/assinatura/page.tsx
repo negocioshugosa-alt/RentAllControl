@@ -325,7 +325,7 @@ export default function AssinaturaPage() {
                   </h4>
                   <p className="text-xs text-muted-foreground mt-1">Para locadoras com crescimento acelerado e equipes</p>
                   <p className="text-2xl font-black font-display text-primary mt-4">
-                    R$ 349,90 <span className="text-xs font-normal text-muted-foreground">/ mês</span>
+                    R$ 299,90 <span className="text-xs font-normal text-muted-foreground">/ mês</span>
                   </p>
                   <ul className="text-xs text-muted-foreground mt-4 space-y-1.5">
                     <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Equipamentos ilimitados</li>
@@ -403,7 +403,7 @@ export default function AssinaturaPage() {
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4" />
-                      Ativar Plano com {selectedPlan === "pro" ? "R$ 349,90" : "R$ 149,90"}/mês
+                      Ativar Plano com {selectedPlan === "pro" ? "R$ 299,90" : "R$ 149,90"}/mês
                     </>
                   )}
                 </button>
