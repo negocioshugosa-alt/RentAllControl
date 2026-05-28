@@ -153,7 +153,8 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
       // Add summary labels row
       const labelsRow = eqWs.addRow({
         "Código": "",
-        "Data Pagto/Venc": "",
+        "Vencimento": "",
+        "Pagamento/Recebimento": "",
         "Tipo": "",
         "Descrição": "",
         "Categoria": "",
@@ -163,15 +164,16 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
         "Valor (R$)": "ROI (%)" as any,
       });
       labelsRow.font = { bold: true, size: 9 };
-      labelsRow.eachCell((cell) => {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE5E7EB" } };
-      });
+      for (let i = 1; i <= 10; i++) {
+        labelsRow.getCell(i).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE5E7EB" } };
+      }
       currentRow++;
 
       // Add summary values row
       const valuesRow = eqWs.addRow({
         "Código": "",
-        "Data Pagto/Venc": "",
+        "Vencimento": "",
+        "Pagamento/Recebimento": "",
         "Tipo": "",
         "Descrição": "",
         "Categoria": "",
@@ -243,7 +245,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     const headers = ["Código", "Equipamento", "Categoria", "Status", "Receitas (R$)", "Custos (R$)", "Lucro Líquido (R$)", "ROI (%)", "Contratos Ativos"];
     eqWs.columns = headers.map((h) => ({ header: h, key: h, width: h === "Equipamento" ? 30 : 18 }));
     eqWs.getRow(1).font = { bold: true };
-    eqWs.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF3B82F6" } };
+    eqWs.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
     eqWs.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
 
     let totalRec = 0;
@@ -551,7 +553,8 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
       width: Math.max(header.length + 2, 15),
     }));
     ws.addRows(rows);
-    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+    ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
   }
 
   const wsInfo = wb.addWorksheet("Informações");
@@ -801,7 +804,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
         ["TOTAL GERAL", "", "", "", formatCurrency(totalRec), formatCurrency(totalCst), formatCurrency(totalProfitGeral), `${totalRoiGeral.toFixed(1)}%`, totalContratosGeral.toString()]
       ],
       theme: "striped",
-      headStyles: { fillColor: [79, 70, 229], fontSize: 8 },
+      headStyles: { fillColor: [37, 99, 235], fontSize: 8 },
       footStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontSize: 8, fontStyle: "bold" },
       bodyStyles: { fontSize: 7.5 },
       didParseCell: function(data) {
