@@ -43,6 +43,7 @@ const statusBadge: Record<string, string> = {
   alugado: "badge-alugado",
   manutencao: "badge-manutencao",
   inativo: "badge-inativo",
+  vendido: "bg-red-500/10 text-red-500 border-red-500/20",
 };
 
 const statusLabel: Record<string, string> = {
@@ -50,6 +51,7 @@ const statusLabel: Record<string, string> = {
   alugado: "Alugado",
   manutencao: "Manutenção",
   inativo: "Inativo",
+  vendido: "Vendido",
 };
 
 export default function EquipamentosPage() {
