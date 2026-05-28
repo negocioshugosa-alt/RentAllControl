@@ -71,6 +71,11 @@ export default function EquipamentosPage() {
     enabled: !!companyId,
   });
 
+  const displayedEquipments = equipments.filter((eq) => {
+    if (!statusFilter && eq.status === "vendido") return false;
+    return true;
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
@@ -92,21 +97,6 @@ export default function EquipamentosPage() {
         if (isTrialExpired) throw new Error("Período de testes expirado: ative uma assinatura para continuar.");
       }
 
-      const { data: equipment } = await supabase
-        .from("equipment")
-        .select("status")
-        .eq("id", id)
-        .single();
-
-      // Caso o equipamento já tenha sido marcado como vendido, permite a exclusão mesmo que existam lançamentos
-      // associados (contratos ou transações). Essa regra adicional garante que a venda finalize o ciclo do
-      // equipamento sem impedir a remoção dos registros históricos.
-      if (equipment?.status === "vendido") {
-        const { error } = await supabase.from("equipment").delete().eq("id", id);
-        if (error) throw error;
-        return;
-      }
-
       const { count: contractCount } = await supabase
         .from("contracts")
         .select("*", { count: "exact", head: true })
@@ -117,19 +107,34 @@ export default function EquipamentosPage() {
         .select("*", { count: "exact", head: true })
         .eq("equipment_id", id);
 
-      if ((contractCount || 0) > 0 || (transactionCount || 0) > 0) {
-        throw new Error(
-          "Este equipamento possui contratos ou lançamentos financeiros vinculados e não pode ser excluído. Mude o status do equipamento para 'Vendido' antes de excluí-lo."
-        );
-      }
+      const hasHistory = (contractCount || 0) > 0 || (transactionCount || 0) > 0;
 
-      const { error } = await supabase.from("equipment").delete().eq("id", id);
-      if (error) throw error;
+      if (hasHistory) {
+        // Soft delete: atualiza o status para 'vendido' para preservar os dados comerciais
+        const { error } = await supabase
+          .from("equipment")
+          .update({ status: "vendido" })
+          .eq("id", id);
+        if (error) throw error;
+        return { isSoftDeleted: true };
+      } else {
+        // Remoção física se não houver histórico associado
+        const { error } = await supabase
+          .from("equipment")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+        return { isSoftDeleted: false };
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries();
       router.refresh();
-      toast.success("Equipamento removido");
+      if (data?.isSoftDeleted) {
+        toast.success("Equipamento marcado como vendido para preservar histórico comercial.");
+      } else {
+        toast.success("Equipamento removido com sucesso.");
+      }
     },
     onError: (error: any) => toast.error(error.message || "Erro ao remover equipamento"),
   });
@@ -212,7 +217,7 @@ export default function EquipamentosPage() {
                     <td colSpan={7}><div className="skeleton h-5 w-full rounded" /></td>
                   </tr>
                 ))
-              ) : equipments.length === 0 ? (
+              ) : displayedEquipments.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-muted-foreground">
                     <Wrench className="w-10 h-10 mx-auto mb-3 opacity-20" />
@@ -226,7 +231,7 @@ export default function EquipamentosPage() {
                   </td>
                 </tr>
               ) : (
-                equipments.map((eq) => (
+                displayedEquipments.map((eq) => (
                   <tr key={eq.id}>
                     <td>
                       <div className="flex items-center gap-3">
@@ -270,7 +275,9 @@ export default function EquipamentosPage() {
                         </button>
                         <button
                           onClick={() => {
-                            if (confirm("Remover este equipamento?")) deleteMutation.mutate(eq.id);
+                            if (confirm("Deseja realmente remover este equipamento? (Se ele possuir contratos ou transações vinculadas, seu status será alterado para vendido para preservar os históricos comerciais e relatórios).")) {
+                              deleteMutation.mutate(eq.id);
+                            }
                           }}
                           className="p-1.5 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
                         >
