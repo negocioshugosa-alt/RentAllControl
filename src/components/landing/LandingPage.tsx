@@ -13,7 +13,7 @@ import { useState } from "react";
 const features = [
   { 
     icon: Wrench, 
-    title: "Frota sob Controle", 
+    title: "Ativos sob Controle", 
     desc: "Acompanhe a disponibilidade, o histórico de manutenções e o ciclo de vida de cada ativo físico em tempo real." 
   },
   { 
@@ -105,7 +105,7 @@ const plans = [
     period: "/mês",
     desc: "A solução completa para locadoras em rápida expansão que buscam máxima automação e lucratividade.",
     features: [
-      "Equipamentos e frotas ilimitados",
+      "Equipamentos e ativos ilimitados",
       "Usuários e colaboradores ilimitados",
       "Alertas automáticos de inadimplência e vencimentos",
       "Centro de custos com ROI avançado por ativo",
@@ -194,14 +194,14 @@ export function LandingPage() {
           </div>
           
           <h1 className="font-display text-4xl sm:text-5xl md:text-6.5xl font-black leading-tight tracking-tight mb-8">
-            Controle sua frota de aluguel,<br className="hidden sm:inline" />
+            Controle seus ativos de locação,<br className="hidden sm:inline" />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-violet-400">
               multiplique seu lucro
             </span> e reduza perdas.
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-            Esqueça planilhas manuais. O RentAllControl centraliza frotas, contratos, financeiro
+            Esqueça planilhas manuais. O RentAllControl centraliza ativos, contratos, financeiro
             e calcula o <strong className="text-slate-200">ROI exato por ativo</strong> automaticamente.
             Uma plataforma <strong className="text-blue-400">universal e 100% configurável</strong> para gerenciar locação de qualquer ativo físico no mercado.
           </p>
@@ -288,7 +288,7 @@ export function LandingPage() {
                     { label: "Receita Prevista", value: "R$ 48.590,00", color: "text-emerald-400", change: "+12.4% no mês" },
                     { label: "Custos Operacionais", value: "R$ 12.340,00", color: "text-rose-400", change: "-4.2% em manutenção" },
                     { label: "Lucro Líquido Real", value: "R$ 36.250,00", color: "text-blue-400", change: "ROI saudável de 74%" },
-                    { label: "Ocupação da Frota", value: "86.4%", color: "text-amber-400", change: "42 ativos locados hoje" },
+                    { label: "Taxa de Ocupação", value: "86.4%", color: "text-amber-400", change: "42 ativos locados hoje" },
                   ].map((card, idx) => (
                     <div key={idx} className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 space-y-2">
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">{card.label}</p>
@@ -464,7 +464,7 @@ export function LandingPage() {
               Preços Claros & Transparentes
             </span>
             <h2 className="font-display text-3xl md:text-4.5xl font-black tracking-tight mt-6 mb-4">
-              Escolha o plano perfeito para sua frota
+              Escolha o plano perfeito para sua empresa
             </h2>
             <p className="text-slate-400 max-w-xl mx-auto text-base">
               Todos os planos incluem o período de testes grátis por 30 dias. Cancele quando desejar, sem fidelidade.
