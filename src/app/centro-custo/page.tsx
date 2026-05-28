@@ -7,7 +7,7 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { formatCurrency, formatPercent, calculateROI } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Trophy, DollarSign, Wrench } from "lucide-react";
 
-async function fetchCostCenterData(companyId: string) {
+async function fetchCostCenterData(companyId: string, start: string, end: string) {
   const supabase = createClient();
 
   // Buscar equipamentos
@@ -21,7 +21,7 @@ async function fetchCostCenterData(companyId: string) {
   // Buscar transações pagas
   const { data: transactions } = await supabase
     .from("transactions")
-    .select("equipment_id, type, amount, status")
+    .select("equipment_id, type, amount, status, due_date, paid_date")
     .eq("company_id", companyId)
     .eq("status", "pago");
 
@@ -31,8 +31,14 @@ async function fetchCostCenterData(companyId: string) {
     .select("id, equipment_id")
     .eq("company_id", companyId);
 
+  // Mapear e filtrar transações por data
+  const filteredTxs = (transactions || []).map((t) => ({
+    ...t,
+    txDate: t.paid_date || t.due_date
+  })).filter((t) => t.txDate >= start && t.txDate <= end);
+
   return equipment.map((eq) => {
-    const txs = (transactions || []).filter((t) => t.equipment_id === eq.id);
+    const txs = filteredTxs.filter((t) => t.equipment_id === eq.id);
     const total_revenue = txs
       .filter((t) => t.type === "receita")
       .reduce((s, t) => s + Number(t.amount), 0);
@@ -57,11 +63,15 @@ async function fetchCostCenterData(companyId: string) {
 
 export default function CentroCustoPage() {
   const [sortBy, setSortBy] = useState<"profit" | "revenue" | "cost" | "roi">("profit");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date(); d.setDate(1); return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
   const { companyId, isLoading: loadingCompany } = useCompanyId();
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: ["centro-custo", companyId],
-    queryFn: () => fetchCostCenterData(companyId!),
+    queryKey: ["centro-custo", companyId, startDate, endDate],
+    queryFn: () => fetchCostCenterData(companyId!, startDate, endDate),
     enabled: !!companyId,
   });
 
@@ -82,6 +92,18 @@ export default function CentroCustoPage() {
     <div className="flex flex-col flex-1">
       <Header title="Centro de Custo" subtitle="Lucratividade por equipamento" />
       <div className="flex-1 p-6 space-y-6">
+
+        {/* Period filter */}
+        <div className="flex flex-col sm:flex-row gap-4 p-5 rounded-xl border bg-card items-end">
+          <div>
+            <label className="text-sm font-medium mb-1 block text-muted-foreground">Período Inicial</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input" />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block text-muted-foreground">Período Final</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input" />
+          </div>
+        </div>
 
         {/* Totals */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

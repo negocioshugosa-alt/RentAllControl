@@ -21,7 +21,7 @@ async function getCompanyId() {
   return data?.company_id;
 }
 
-async function fetchTransactions(companyId: string, type: string, status: string, search: string) {
+async function fetchTransactions(companyId: string, type: string, status: string, search: string, start: string, end: string) {
   const supabase = createClient();
   let query = supabase
     .from("transactions")
@@ -40,7 +40,11 @@ async function fetchTransactions(companyId: string, type: string, status: string
   results = results.map((t) => ({
     ...t,
     status: t.status === "pendente" && t.due_date < today ? "vencido" : t.status,
+    txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date,
   }));
+
+  // Filter by date range
+  results = results.filter((t) => t.txDate >= start && t.txDate <= end);
 
   if (search) {
     const s = search.toLowerCase();
@@ -68,6 +72,10 @@ export default function FinanceiroPage() {
   const [type, setType] = useState<"" | "receita" | "despesa">("");
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date(); d.setDate(1); return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Transaction | null>(null);
   const [defaultType, setDefaultType] = useState<"receita" | "despesa">("receita");
@@ -78,8 +86,8 @@ export default function FinanceiroPage() {
   const { companyId } = useCompanyId();
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["financeiro", companyId, type, status, search],
-    queryFn: () => fetchTransactions(companyId!, type, status, search),
+    queryKey: ["financeiro", companyId, type, status, search, startDate, endDate],
+    queryFn: () => fetchTransactions(companyId!, type, status, search, startDate, endDate),
     enabled: !!companyId,
   });
 
@@ -150,6 +158,18 @@ export default function FinanceiroPage() {
       />
 
       <div className="flex-1 p-6 space-y-4">
+        {/* Period filter */}
+        <div className="flex flex-col sm:flex-row gap-4 p-5 rounded-xl border bg-card items-end">
+          <div>
+            <label className="text-sm font-medium mb-1 block text-muted-foreground">Período Inicial</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input" />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block text-muted-foreground">Período Final</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input" />
+          </div>
+        </div>
+
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="metric-card">

@@ -7,11 +7,12 @@ import { EquipmentStatus } from "@/components/dashboard/EquipmentStatus";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { ProfitByEquipment } from "@/components/dashboard/ProfitByEquipment";
+import { DashboardDateFilter } from "@/components/dashboard/DashboardDateFilter";
 import { formatDate } from "@/lib/utils";
 
 export const metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ start?: string; end?: string }> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -23,8 +24,10 @@ export default async function DashboardPage() {
     .single();
 
   const companyId = profile?.company_id;
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-    .toISOString().split("T")[0];
+
+  const params = await searchParams;
+  const start = params.start || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
+  const end = params.end || new Date().toISOString().split("T")[0];
 
   const [
     { data: transactions },
@@ -40,10 +43,19 @@ export default async function DashboardPage() {
 
   const txs = transactions || [];
   const todayStr = new Date().toISOString().split("T")[0];
-  const monthRevenue = txs.filter((t) => t.type === "receita" && t.status === "pago" && t.paid_date >= monthStart).reduce((s, t) => s + Number(t.amount), 0);
-  const monthExpenses = txs.filter((t) => t.type === "despesa" && t.status === "pago" && t.paid_date >= monthStart).reduce((s, t) => s + Number(t.amount), 0);
-  const overdueReceivables = txs.filter((t) => t.type === "receita" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
-  const overduePayables = txs.filter((t) => t.type === "despesa" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
+
+  // Map and filter transactions by calculated date
+  const mappedTxs = txs.map((t) => ({
+    ...t,
+    txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+  }));
+
+  const periodTxs = mappedTxs.filter((t) => t.txDate >= start && t.txDate <= end);
+
+  const monthRevenue = periodTxs.filter((t) => t.type === "receita" && t.status === "pago").reduce((s, t) => s + Number(t.amount), 0);
+  const monthExpenses = periodTxs.filter((t) => t.type === "despesa" && t.status === "pago").reduce((s, t) => s + Number(t.amount), 0);
+  const overdueReceivables = mappedTxs.filter((t) => t.type === "receita" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
+  const overduePayables = mappedTxs.filter((t) => t.type === "despesa" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
 
   const eq = equipment || [];
   const rented = eq.filter((e) => e.status === "alugado").length;
@@ -68,6 +80,8 @@ export default async function DashboardPage() {
     <div className="flex flex-col flex-1">
       <Header title="Dashboard" subtitle={`Resumo — ${formatDate(new Date(), "MMMM yyyy")}`} />
       <div className="flex-1 p-6 space-y-6">
+        <DashboardDateFilter initialStart={start} initialEnd={end} />
+        
         <MetricCards metrics={metrics} />
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2"><RevenueChart /></div>
