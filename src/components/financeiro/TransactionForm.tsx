@@ -384,7 +384,8 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
           </button>
           <button
             onClick={handleSubmit(onSubmit)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isReadOnly}
+            title={isReadOnly ? "Regularize sua assinatura para liberar alterações" : undefined}
             className={`px-4 py-2 rounded-xl text-white text-sm font-medium transition-colors disabled:opacity-50 ${txType === "receita" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
           >
             {isSubmitting ? "Salvando…" : isEdit ? "Salvar" : "Criar Lançamento"}

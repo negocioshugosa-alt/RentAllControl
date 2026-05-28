@@ -7,7 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
 import { Header } from "@/components/shared/Header";
-import { formatCpfCnpj, unformatDocument } from "@/lib/utils";
+import { formatCpfCnpj, unformatDocument, formatPhone, formatCep } from "@/lib/utils";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { Building2, Key, User, Save, Eye, EyeOff, Upload, X, ImageIcon, CreditCard, Users } from "lucide-react";
 import Image from "next/image";
@@ -52,6 +53,7 @@ export default function ConfiguracoesPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const { isReadOnly } = useSubscription();
 
   const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: getProfile });
   const company = (profile as any)?.companies;
@@ -224,7 +226,8 @@ export default function ConfiguracoesPage() {
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingLogo}
+                      disabled={uploadingLogo || isReadOnly}
+                      title={isReadOnly ? "Regularize sua assinatura para liberar alterações" : undefined}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
                       <Upload className="w-4 h-4" />
@@ -233,7 +236,8 @@ export default function ConfiguracoesPage() {
                     {company?.logo_url && (
                       <button
                         onClick={handleRemoveLogo}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors"
+                        disabled={isReadOnly}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors disabled:opacity-50"
                       >
                         <X className="w-4 h-4" />
                         Remover
@@ -283,11 +287,39 @@ export default function ConfiguracoesPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Telefone</label>
-                    <input {...companyForm.register("phone")} className="input w-full" placeholder="(00) 0000-0000" />
+                    <Controller
+                      name="phone"
+                      control={companyForm.control}
+                      render={({ field }) => (
+                        <input
+                          {...field}
+                          className="input w-full font-mono"
+                          inputMode="numeric"
+                          maxLength={14}
+                          placeholder="(00) 0000-0000"
+                          value={formatPhone(field.value || "")}
+                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                        />
+                      )}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">CEP</label>
-                    <input {...companyForm.register("zip_code")} className="input w-full" placeholder="00000-000" />
+                    <Controller
+                      name="zip_code"
+                      control={companyForm.control}
+                      render={({ field }) => (
+                        <input
+                          {...field}
+                          className="input w-full font-mono"
+                          inputMode="numeric"
+                          maxLength={9}
+                          placeholder="00000-000"
+                          value={formatCep(field.value || "")}
+                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                        />
+                      )}
+                    />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="text-sm font-medium mb-1 block">Endereço</label>
@@ -308,7 +340,8 @@ export default function ConfiguracoesPage() {
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    disabled={saveCompany.isPending}
+                    disabled={saveCompany.isPending || isReadOnly}
+                    title={isReadOnly ? "Regularize sua assinatura para liberar alterações" : undefined}
                     className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                   >
                     <Save className="w-4 h-4" />

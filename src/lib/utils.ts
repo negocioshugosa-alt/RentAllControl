@@ -56,11 +56,24 @@ export function formatCpfCnpj(doc: string, type?: "pf" | "pj"): string {
 }
 
 export function formatPhone(phone: string): string {
-  const clean = phone.replace(/\D/g, "");
-  if (clean.length === 11) {
-    return clean.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  const clean = phone.replace(/\D/g, "").slice(0, 11);
+  if (clean.length === 0) return "";
+  if (clean.length <= 2) {
+    return `(${clean}`;
   }
-  return clean.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  if (clean.length <= 6) {
+    return clean.replace(/^(\d{2})(\d)/, "($1) $2");
+  }
+  if (clean.length <= 10) {
+    return clean.replace(/^(\d{2})(\d{4})(\d)/, "($1) $2-$3");
+  }
+  return clean.replace(/^(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+}
+
+export function formatCep(cep: string): string {
+  const clean = cep.replace(/\D/g, "").slice(0, 8);
+  if (clean.length === 0) return "";
+  return clean.replace(/^(\d{5})(\d)/, "$1-$2");
 }
 
 export function formatPercent(value: number): string {

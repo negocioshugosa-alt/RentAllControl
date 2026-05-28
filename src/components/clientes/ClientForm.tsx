@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { formatCpfCnpj, unformatDocument } from "@/lib/utils";
+import { formatCpfCnpj, unformatDocument, formatPhone, formatCep } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Client } from "@/types";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -138,11 +138,39 @@ export function ClientForm({ client, companyId, onClose, onSuccess }: Props) {
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Telefone</label>
-              <input {...register("phone")} className="input w-full" placeholder="(00) 0000-0000" />
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    className="input w-full font-mono"
+                    inputMode="numeric"
+                    maxLength={14}
+                    placeholder="(00) 0000-0000"
+                    value={formatPhone(field.value || "")}
+                    onChange={(e) => field.onChange(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  />
+                )}
+              />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Celular</label>
-              <input {...register("mobile")} className="input w-full" placeholder="(00) 00000-0000" />
+              <Controller
+                name="mobile"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    className="input w-full font-mono"
+                    inputMode="numeric"
+                    maxLength={15}
+                    placeholder="(00) 00000-0000"
+                    value={formatPhone(field.value || "")}
+                    onChange={(e) => field.onChange(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                  />
+                )}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="text-sm font-medium mb-1 block">Endereço</label>
@@ -162,7 +190,21 @@ export function ClientForm({ client, companyId, onClose, onSuccess }: Props) {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">CEP</label>
-                <input {...register("zip_code")} className="input w-full" placeholder="00000-000" />
+                <Controller
+                  name="zip_code"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      className="input w-full font-mono"
+                      inputMode="numeric"
+                      maxLength={9}
+                      placeholder="00000-000"
+                      value={formatCep(field.value || "")}
+                      onChange={(e) => field.onChange(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                    />
+                  )}
+                />
               </div>
             </div>
             <div className="sm:col-span-2">
@@ -176,7 +218,8 @@ export function ClientForm({ client, companyId, onClose, onSuccess }: Props) {
           <button onClick={onClose} className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
           <button
             onClick={handleSubmit(onSubmit)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isReadOnly}
+            title={isReadOnly ? "Regularize sua assinatura para liberar alterações" : undefined}
             className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             {isSubmitting ? "Salvando…" : isEdit ? "Salvar" : "Cadastrar"}
