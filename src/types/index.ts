@@ -57,6 +57,7 @@ export interface BankAccount {
 export type EquipmentStatus = "disponivel" | "alugado" | "manutencao" | "inativo" | "vendido";
 export type EquipmentCategory =
   | "caminhao"
+  | "veiculo"
   | "maquina_pesada"
   | "equipamento_construcao"
   | "empilhadeira"

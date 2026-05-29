@@ -156,6 +156,7 @@ export const TRANSACTION_CATEGORIES = [
 
 export const EQUIPMENT_CATEGORIES = [
   { value: "caminhao", label: "Caminhão" },
+  { value: "veiculo", label: "Veículo" },
   { value: "maquina_pesada", label: "Máquina Pesada" },
   { value: "equipamento_construcao", label: "Equip. Construção" },
   { value: "empilhadeira", label: "Empilhadeira" },

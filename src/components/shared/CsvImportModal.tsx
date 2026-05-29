@@ -26,6 +26,7 @@ const normalizeValue = (val: string): string => {
 const mapEquipmentCategory = (val: string): string => {
   const norm = normalizeValue(val);
   if (norm.includes("caminhao")) return "caminhao";
+  if (norm.includes("veiculo")) return "veiculo";
   if (norm.includes("maquina pesada") || norm.includes("maquina_pesada")) return "maquina_pesada";
   if (norm.includes("construcao") || norm.includes("equipamento_construcao")) return "equipamento_construcao";
   if (norm.includes("empilhadeira")) return "empilhadeira";
@@ -113,7 +114,7 @@ export function CsvImportModal({ type, companyId, onClose, onSuccess }: Props) {
       headers = [
         "codigo",
         "nome",
-        "categoria (Opcoes: caminhao, maquina_pesada, equipamento_construcao, empilhadeira, gerador, compressor, andaime, outro)",
+        "categoria (Opcoes: caminhao, veiculo, maquina_pesada, equipamento_construcao, empilhadeira, gerador, compressor, andaime, outro)",
         "marca",
         "modelo",
         "ano",
@@ -414,7 +415,7 @@ export function CsvImportModal({ type, companyId, onClose, onSuccess }: Props) {
               <ul className="list-disc pl-4 mt-1 space-y-1">
                 {type === "equipment" ? (
                   <>
-                    <li><strong>Categoria</strong>: deve conter palavras correspondentes a caminhao, maquina_pesada, equipamento_construcao, empilhadeira, gerador, compressor, andaime ou outro.</li>
+                    <li><strong>Categoria</strong>: deve conter palavras correspondentes a caminhao, veiculo, maquina_pesada, equipamento_construcao, empilhadeira, gerador, compressor, andaime ou outro.</li>
                     <li><strong>Status</strong>: disponivel, alugado, manutencao, inativo ou vendido.</li>
                   </>
                 ) : (
