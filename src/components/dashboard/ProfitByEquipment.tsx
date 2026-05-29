@@ -84,7 +84,7 @@ export function ProfitByEquipment() {
   }));
 
   return (
-    <div className="rounded-2xl border bg-card p-5 shadow-sm max-h-[420px] overflow-y-auto">
+    <div className="rounded-2xl border bg-card p-5 shadow-sm">
       <div className="mb-5">
         <h3 className="font-semibold">Lucratividade por Equipamento</h3>
         <p className="text-sm text-muted-foreground">Ranking de lucro líquido (Top 10)</p>

@@ -79,7 +79,7 @@ export function EquipmentStatus(_props: any) {
   });
 
   return (
-    <div className="rounded-xl border bg-card p-5 h-full flex flex-col">
+    <div className="rounded-xl border bg-card p-5 h-[390px] flex flex-col">
       <div className="mb-4">
         <h3 className="font-semibold">Resultado por Equipamento</h3>
         <p className="text-sm text-muted-foreground">Lucro / Prejuízo acumulado</p>
