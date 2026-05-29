@@ -31,7 +31,7 @@ export async function AppLayout({ children }: { children: React.ReactNode }) {
   const subscriptionPlan = company?.subscription_plan || "pro";
   const subscriptionStatus = company?.subscription_status || "trialing";
   const trialEndsAt = company?.subscription_trial_ends_at;
-  const subscriptionCurrentPeriodEnd = company?.subscription_current_period_end;
+  const subscriptionCurrentPeriodEnd = company?.subscription_expires_at;
 
   const now = new Date();
 
