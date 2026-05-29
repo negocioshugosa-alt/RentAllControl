@@ -167,10 +167,19 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
   });
 
   const { data: bankAccounts = [] } = useQuery({
-    queryKey: ["bank-accounts-select", companyId],
+    queryKey: ["bank-accounts-select", companyId, (transaction as any)?.bank_account_id],
     queryFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase.from("bank_accounts").select("id, name, bank_name").eq("company_id", companyId).order("name");
+      let query = supabase.from("bank_accounts").select("id, name, bank_name, is_active").eq("company_id", companyId);
+      
+      const linkedAccountId = (transaction as any)?.bank_account_id;
+      if (linkedAccountId) {
+        query = query.or(`is_active.eq.true,id.eq.${linkedAccountId}`);
+      } else {
+        query = query.eq("is_active", true);
+      }
+      
+      const { data } = await query.order("name");
       return data || [];
     },
   });

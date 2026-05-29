@@ -1,11 +1,9 @@
-// src/app/dashboard/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/shared/Header";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { EquipmentStatus } from "@/components/dashboard/EquipmentStatus";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
-import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { ProfitByEquipment } from "@/components/dashboard/ProfitByEquipment";
 import { DashboardDateFilter } from "@/components/dashboard/DashboardDateFilter";
 import { formatDate } from "@/lib/utils";
@@ -33,12 +31,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     { data: transactions },
     { data: equipment },
     { data: contracts },
-    { data: alerts },
   ] = await Promise.all([
     supabase.from("transactions").select("*").eq("company_id", companyId).order("due_date", { ascending: false }).limit(200),
     supabase.from("equipment").select("*").eq("company_id", companyId),
     supabase.from("contracts").select("*, clients(name), equipment(name)").eq("company_id", companyId).eq("status", "ativo"),
-    supabase.from("alerts").select("*").eq("company_id", companyId).eq("is_read", false).order("created_at", { ascending: false }).limit(5),
   ]);
 
   const txs = transactions || [];
@@ -96,9 +92,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <div className="xl:col-span-2"><RevenueChart /></div>
           <div><EquipmentStatus metrics={metrics} /></div>
         </div>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-2"><RecentTransactions transactions={txs.slice(0, 8) as any} /></div>
-          <div><AlertsWidget alerts={(alerts || []) as any} /></div>
+        <div className="grid grid-cols-1 gap-6">
+          <RecentTransactions transactions={txs.slice(0, 8) as any} />
         </div>
         <ProfitByEquipment />
       </div>

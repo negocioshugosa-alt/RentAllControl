@@ -17,7 +17,7 @@ async function fetchContracts(companyId: string, search: string, status: string)
   const supabase = createClient();
   let query = supabase
     .from("contracts")
-    .select("*, clients(name, document), equipment(name, code)")
+    .select("*, clients(name, document), equipment(name, code), bank_accounts(name)")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
   if (status) query = query.eq("status", status);
@@ -160,6 +160,11 @@ export default function ContratosPage() {
                     <td>
                       <p className="font-medium">{c.contract_number}</p>
                       <p className="text-xs text-muted-foreground">{c.clients?.name}</p>
+                      {c.bank_accounts?.name && (
+                        <p className="text-[10px] text-blue-500 flex items-center gap-1 mt-0.5" title="Conta bancária de destino">
+                          🏦 <span className="font-semibold">{c.bank_accounts.name}</span>
+                        </p>
+                      )}
                     </td>
                     <td className="hidden md:table-cell">
                       <p className="text-sm">{c.equipment?.name}</p>

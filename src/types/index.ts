@@ -48,6 +48,7 @@ export interface BankAccount {
   account_number?: string;
   type: "corrente" | "poupanca" | "outra";
   balance: number;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -152,6 +153,8 @@ export interface Contract {
   rented_quantity?: number;
   notes?: string;
   file_url?: string;
+  bank_account_id?: string;
+  bank_accounts?: { name: string };
   client?: Client;
   equipment?: Equipment;
   created_at: string;

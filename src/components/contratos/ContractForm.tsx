@@ -31,6 +31,7 @@ const schema = z.object({
   deposit_value: z.number().optional().nullable(),
   deposit_paid: z.boolean().default(false),
   notes: z.string().optional(),
+  bank_account_id: z.string().optional().nullable(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -94,6 +95,22 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
     enabled: !!companyId,
   });
 
+  const { data: bankAccounts = [] } = useQuery({
+    queryKey: ["bank-accounts-select", companyId, contract?.bank_account_id],
+    queryFn: async () => {
+      const supabase = createClient();
+      let query = supabase.from("bank_accounts").select("id, name, bank_name, is_active").eq("company_id", companyId);
+      const linkedAccountId = contract?.bank_account_id;
+      if (linkedAccountId) {
+        query = query.or(`is_active.eq.true,id.eq.${linkedAccountId}`);
+      } else {
+        query = query.eq("is_active", true);
+      }
+      const { data } = await query.order("name");
+      return data || [];
+    },
+  });
+
   const {
     register,
     handleSubmit,
@@ -120,6 +137,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
       deposit_value: contract?.deposit_value ? Number(contract.deposit_value) : null,
       deposit_paid: contract?.deposit_paid || false,
       notes: contract?.notes || "",
+      bank_account_id: contract?.bank_account_id || "",
     },
   });
 
@@ -201,6 +219,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
         contract_value: isUnica ? (data.contract_value || null) : null,
         deposit_value: data.deposit_value || null,
         end_date: data.end_date || null,
+        bank_account_id: data.bank_account_id || null,
       };
 
       let contractId = contract?.id;
@@ -272,6 +291,7 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
         client_id: data.client_id,
         equipment_id: data.equipment_id,
         contract_id: contractId,
+        bank_account_id: data.bank_account_id || null,
       };
 
       if (existingTx) {
@@ -425,6 +445,22 @@ export function ContractForm({ contract, companyId, onClose, onSuccess }: Props)
                   type="date"
                   className="input w-full"
                 />
+              </div>
+
+              {/* Conta Bancária */}
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium mb-1 block">Conta Bancária de Destino</label>
+                <select {...register("bank_account_id")} className="input w-full">
+                  <option value="">Nenhuma (Vínculo manual posterior)</option>
+                  {bankAccounts.map((acc: any) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} {acc.bank_name ? `(${acc.bank_name})` : ""} {!acc.is_active ? " (Inativa)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  O faturamento financeiro gerado automaticamente por este contrato será creditado nesta conta.
+                </p>
               </div>
 
               {/* Pagamento único */}

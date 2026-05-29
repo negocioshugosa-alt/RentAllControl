@@ -12,7 +12,7 @@ import {
   Landmark, Plus, Trash2, Edit2, Save, X, Loader2, CreditCard, Building2, User, Users, Info
 } from "lucide-react";
 import Link from "next/link";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 
 interface BankAccount {
   id: string;
@@ -22,6 +22,7 @@ interface BankAccount {
   account_number?: string;
   type: "corrente" | "poupanca" | "outra";
   balance: number;
+  is_active?: boolean;
 }
 
 export default function ContasBancariasPage() {
@@ -39,6 +40,7 @@ export default function ContasBancariasPage() {
   const [accountNumber, setAccountNumber] = useState("");
   const [type, setType] = useState<"corrente" | "poupanca" | "outra">("corrente");
   const [balance, setBalance] = useState<number>(0);
+  const [isActive, setIsActive] = useState(true);
 
   // Fetch Accounts
   const { data: accounts = [], isLoading } = useQuery<BankAccount[]>({
@@ -73,6 +75,7 @@ export default function ContasBancariasPage() {
         account_number: accountNumber.trim() || null,
         type,
         balance: Number(balance) || 0,
+        is_active: isActive,
       };
 
       const { error } = editingAccount
@@ -120,6 +123,7 @@ export default function ContasBancariasPage() {
     setAccountNumber("");
     setType("corrente");
     setBalance(0);
+    setIsActive(true);
     setShowModal(true);
   }
 
@@ -131,6 +135,7 @@ export default function ContasBancariasPage() {
     setAccountNumber(acc.account_number || "");
     setType(acc.type);
     setBalance(acc.balance);
+    setIsActive(acc.is_active !== false);
     setShowModal(true);
   }
 
@@ -205,61 +210,71 @@ export default function ContasBancariasPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {accounts.map((acc) => (
-              <div key={acc.id} className="rounded-2xl border bg-card p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
-                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-600" />
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600">
-                      <Landmark className="w-5 h-5" />
+            {accounts.map((acc) => {
+              const isAccActive = acc.is_active !== false;
+              return (
+                <div key={acc.id} className={cn("rounded-2xl border bg-card p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between", !isAccActive && "opacity-60 bg-muted/20")}>
+                  <div className={cn("absolute top-0 inset-x-0 h-1 bg-gradient-to-r", isAccActive ? "from-blue-500 to-indigo-600" : "from-gray-400 to-gray-500")} />
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("p-2.5 rounded-xl", isAccActive ? "bg-blue-500/10 text-blue-600" : "bg-gray-500/10 text-gray-500")}>
+                        <Landmark className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm font-display text-foreground flex items-center gap-2">
+                          {acc.name}
+                          {!isAccActive && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500 border border-gray-500/20">
+                              Inativa
+                            </span>
+                          )}
+                        </h4>
+                        {acc.bank_name && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{acc.bank_name}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-sm font-display text-foreground">{acc.name}</h4>
-                      {acc.bank_name && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{acc.bank_name}</p>
-                      )}
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleOpenEdit(acc)}
+                        disabled={isReadOnly}
+                        className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                        title="Editar Conta"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Deseja realmente remover a conta "${acc.name}"? Lançamentos associados a esta conta não serão excluídos, mas perderão o vínculo.`)) {
+                            deleteMutation.mutate(acc.id);
+                          }
+                        }}
+                        disabled={isReadOnly}
+                        className="p-1.5 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
+                        title="Remover Conta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => handleOpenEdit(acc)}
-                      disabled={isReadOnly}
-                      className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                      title="Editar Conta"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Deseja realmente remover a conta "${acc.name}"? Lançamentos associados a esta conta não serão excluídos, mas perderão o vínculo.`)) {
-                          deleteMutation.mutate(acc.id);
-                        }
-                      }}
-                      disabled={isReadOnly}
-                      className="p-1.5 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
-                      title="Remover Conta"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Agência / Conta</span>
-                    <p className="font-medium mt-0.5">
-                      {acc.agency || "—"} / {acc.account_number || "—"}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-muted-foreground">Saldo Atual</span>
-                    <p className="font-bold text-sm text-foreground tabular-nums mt-0.5">
-                      {formatCurrency(acc.balance)}
-                    </p>
+                  <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Agência / Conta</span>
+                      <p className="font-medium mt-0.5">
+                        {acc.agency || "—"} / {acc.account_number || "—"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-muted-foreground">Saldo Atual</span>
+                      <p className="font-bold text-sm text-foreground tabular-nums mt-0.5">
+                        {formatCurrency(acc.balance)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -346,6 +361,19 @@ export default function ContasBancariasPage() {
                       onChange={(e) => setBalance(Number(e.target.value))}
                     />
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-dashed">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="w-4 h-4 rounded border accent-primary"
+                  />
+                  <label htmlFor="is_active" className="text-xs font-semibold select-none cursor-pointer">
+                    Conta ativa (Disponível para lançamentos)
+                  </label>
                 </div>
               </div>
 

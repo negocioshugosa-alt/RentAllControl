@@ -1,6 +1,6 @@
 "use client";
 // src/components/shared/DashboardLayoutClient.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "./Sidebar";
 import { LoginAlertPopup } from "./LoginAlertPopup";
@@ -9,6 +9,7 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { useSubscription } from "@/hooks/useSubscription";
 import { TrialExpiredBanner } from "./TrialExpiredBanner";
 import { SubscriptionWarningBanner } from "./SubscriptionWarningBanner";
+import { cn } from "@/lib/utils";
 
 interface Props {
   children: React.ReactNode;
@@ -30,8 +31,21 @@ async function fetchUnreadAlertCount(companyId: string) {
 
 export function DashboardLayoutClient({ children, companyName, userName, logoUrl, alertCount: serverAlertCount }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { companyId } = useCompanyId();
   const { isTrialExpired, isPastDue, company } = useSubscription();
+
+  // Load sidebar state from localStorage on mount (prevents hydration mismatch)
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed") === "true";
+    setIsCollapsed(saved);
+  }, []);
+
+  const handleToggleCollapse = () => {
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    localStorage.setItem("sidebar-collapsed", String(nextState));
+  };
 
   // Real-time alert count polling every 30 seconds
   const { data: liveAlertCount } = useQuery({
@@ -91,12 +105,17 @@ export function DashboardLayoutClient({ children, companyName, userName, logoUrl
 
       <div className="flex flex-1 bg-background">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
+        <div className={cn(
+          "hidden lg:block flex-shrink-0 transition-all duration-300",
+          isCollapsed ? "w-[72px]" : "w-[260px]"
+        )}>
           <Sidebar
             companyName={companyName}
             userName={userName}
             logoUrl={logoUrl}
             alertCount={alertCount}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={handleToggleCollapse}
           />
         </div>
 
