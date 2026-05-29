@@ -10,7 +10,7 @@ import { Header } from "@/components/shared/Header";
 import { formatCpfCnpj, unformatDocument, formatPhone, formatCep } from "@/lib/utils";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
-import { Building2, Key, User, Save, Eye, EyeOff, Upload, X, ImageIcon, CreditCard, Users } from "lucide-react";
+import { Building2, Key, User, Save, Eye, EyeOff, Upload, X, ImageIcon, CreditCard, Users, Landmark } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -150,6 +150,7 @@ export default function ConfiguracoesPage() {
     { id: "perfil", label: "Meu Perfil", icon: User, href: null },
     { id: "assinatura", label: "Plano / Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" },
     { id: "equipe", label: "Minha Equipe", icon: Users, href: "/configuracoes/equipe" },
+    { id: "contas", label: "Contas Bancárias", icon: Landmark, href: "/configuracoes/contas" },
   ] as const;
 
   const STATES = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];

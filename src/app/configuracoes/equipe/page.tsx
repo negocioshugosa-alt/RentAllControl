@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 // src/app/configuracoes/equipe/page.tsx
 import { useState } from "react";
@@ -10,8 +10,10 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import {
   Users, Plus, Trash2, Shield, UserX, UserCheck,
-  Copy, ExternalLink, AlertTriangle, Loader2, Info
+  Copy, ExternalLink, AlertTriangle, Loader2, Info,
+  Building2, CreditCard, Landmark
 } from "lucide-react";
+import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 
 const roleLabels: Record<string, string> = {
@@ -168,6 +170,30 @@ export default function EquipePage() {
       <Header title="Gestão de Equipe" subtitle="Gerencie colaboradores e convites de acesso" />
 
       <div className="flex-1 p-6 space-y-6 max-w-4xl">
+        {/* Navigation Tabs */}
+        <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit flex-wrap">
+          {[
+            { id: "empresa", label: "Empresa", icon: Building2, href: "/configuracoes" },
+            { id: "assinatura", label: "Plano / Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" },
+            { id: "equipe", label: "Minha Equipe", icon: Users, href: "/configuracoes/equipe" },
+            { id: "contas", label: "Contas Bancárias", icon: Landmark, href: "/configuracoes/contas" },
+          ].map((tab) => {
+            const isActive = tab.id === "equipe";
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
+
         {/* Banner informativo de Limites de Plano */}
         {plan === "essencial" && (
           <div className="bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-4 rounded-xl flex items-start gap-3">

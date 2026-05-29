@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Filter, Wrench, MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Wrench, MoreHorizontal, Eye, Pencil, Trash2, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { EquipmentForm } from "@/components/equipamentos/EquipmentForm";
 import { EquipmentDetail } from "@/components/equipamentos/EquipmentDetail";
+import { CsvImportModal } from "@/components/shared/CsvImportModal";
 import { formatCurrency, EQUIPMENT_STATUS, EQUIPMENT_CATEGORIES } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Equipment } from "@/types";
@@ -58,6 +59,7 @@ export default function EquipamentosPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editItem, setEditItem] = useState<Equipment | null>(null);
   const [detailItem, setDetailItem] = useState<Equipment | null>(null);
   const queryClient = useQueryClient();
@@ -145,13 +147,22 @@ export default function EquipamentosPage() {
         title="Equipamentos"
         subtitle={`${equipments.length} equipamentos cadastrados`}
         actions={
-          <button
-            onClick={() => { setEditItem(null); setShowForm(true); }}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Equipamento
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 border border-border px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              Importar Planilha
+            </button>
+            <button
+              onClick={() => { setEditItem(null); setShowForm(true); }}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Equipamento
+            </button>
+          </div>
         }
       />
 
@@ -311,6 +322,18 @@ export default function EquipamentosPage() {
           equipment={detailItem}
           onClose={() => setDetailItem(null)}
           onEdit={() => { setEditItem(detailItem); setDetailItem(null); setShowForm(true); }}
+        />
+      )}
+
+      {showImport && (
+        <CsvImportModal
+          type="equipment"
+          companyId={companyId!}
+          onClose={() => setShowImport(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries();
+            router.refresh();
+          }}
         />
       )}
     </div>

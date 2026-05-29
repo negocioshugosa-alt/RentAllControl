@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, DollarSign, TrendingUp, TrendingDown, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Search, DollarSign, TrendingUp, TrendingDown, CheckCircle2, AlertCircle, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { TransactionForm } from "@/components/financeiro/TransactionForm";
+import { CsvImportModal } from "@/components/shared/CsvImportModal";
 import { formatCurrency, formatDate, TRANSACTION_CATEGORIES, isOverdue } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Transaction } from "@/types";
@@ -25,7 +26,7 @@ async function fetchTransactions(companyId: string, type: string, status: string
   const supabase = createClient();
   let query = supabase
     .from("transactions")
-    .select("*, clients(name), equipment(name, code), contracts(contract_number)")
+    .select("*, clients(name), equipment(name, code), contracts(contract_number), bank_accounts(name)")
     .eq("company_id", companyId)
     .order("due_date", { ascending: false });
 
@@ -77,6 +78,7 @@ export default function FinanceiroPage() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editItem, setEditItem] = useState<Transaction | null>(null);
   const [defaultType, setDefaultType] = useState<"receita" | "despesa">("receita");
   const queryClient = useQueryClient();
@@ -139,6 +141,13 @@ export default function FinanceiroPage() {
         subtitle="Contas a receber e a pagar"
         actions={
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 border border-border px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <Upload className="w-4 h-4" />
+              Importar Planilha
+            </button>
             <button
               onClick={() => { setDefaultType("receita"); setEditItem(null); setShowForm(true); }}
               className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
@@ -264,9 +273,16 @@ export default function FinanceiroPage() {
                   <tr key={tx.id} className={tx.status === "vencido" ? "bg-red-500/3" : ""}>
                     <td>
                       <p className="font-medium text-sm">{tx.description}</p>
-                      {tx.paid_date && (
-                        <p className="text-xs text-muted-foreground">Pago em {formatDate(tx.paid_date)}</p>
-                      )}
+                      <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 items-center mt-0.5">
+                        {tx.paid_date && (
+                          <span className="text-xs text-muted-foreground">Pago em {formatDate(tx.paid_date)}</span>
+                        )}
+                        {(tx as any).bank_accounts?.name && (
+                          <span className="text-xs font-semibold text-blue-500 dark:text-blue-400 flex items-center gap-1">
+                            🏦 {(tx as any).bank_accounts.name}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td>
                       <span className={`flex items-center gap-1 text-xs font-medium ${tx.type === "receita" ? "text-green-600" : "text-red-500"}`}>
@@ -334,6 +350,18 @@ export default function FinanceiroPage() {
             queryClient.invalidateQueries();
             router.refresh();
             setShowForm(false);
+          }}
+        />
+      )}
+
+      {showImport && (
+        <CsvImportModal
+          type="finance"
+          companyId={companyId!}
+          onClose={() => setShowImport(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries();
+            router.refresh();
           }}
         />
       )}

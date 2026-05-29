@@ -27,6 +27,7 @@ const schema = z.object({
   contract_id: z.string().optional(),
   payment_method: z.string().optional(),
   notes: z.string().optional(),
+  bank_account_id: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -165,6 +166,15 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
     },
   });
 
+  const { data: bankAccounts = [] } = useQuery({
+    queryKey: ["bank-accounts-select", companyId],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("bank_accounts").select("id, name, bank_name").eq("company_id", companyId).order("name");
+      return data || [];
+    },
+  });
+
   const { register, handleSubmit, watch, control, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -181,6 +191,7 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
       contract_id: transaction?.contract_id || "",
       payment_method: transaction?.payment_method || "",
       notes: transaction?.notes || "",
+      bank_account_id: (transaction as any)?.bank_account_id || "",
     },
   });
 
@@ -204,6 +215,7 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
       equipment_id: data.equipment_id || null,
       contract_id: data.contract_id || null,
       paid_date: data.paid_date || null,
+      bank_account_id: data.bank_account_id || null,
     };
 
     const { error } = isEdit
@@ -312,6 +324,17 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
                 <option value="transferencia">Transferência</option>
                 <option value="dinheiro">Dinheiro</option>
                 <option value="cheque">Cheque</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Conta Bancária</label>
+              <select {...register("bank_account_id")} className="input w-full">
+                <option value="">—</option>
+                {bankAccounts.map((acc: any) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} {acc.bank_name ? `(${acc.bank_name})` : ""}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

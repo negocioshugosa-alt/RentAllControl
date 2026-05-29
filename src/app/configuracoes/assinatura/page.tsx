@@ -7,8 +7,10 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   CreditCard, Check, AlertTriangle, QrCode,
-  Copy, FileText, Download, Loader2, Info, Landmark, HelpCircle
+  Copy, FileText, Download, Loader2, Info, Landmark, HelpCircle,
+  Building2, User, Users
 } from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -222,6 +224,30 @@ export default function AssinaturaPage() {
       <Header title="Assinatura & Plano" subtitle="Gerencie as mensalidades e recursos do seu RentAllControl" />
 
       <div className="flex-1 p-6 space-y-6 max-w-4xl">
+        {/* Navigation Tabs */}
+        <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit flex-wrap">
+          {[
+            { id: "empresa", label: "Empresa", icon: Building2, href: "/configuracoes" },
+            { id: "assinatura", label: "Plano / Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" },
+            { id: "equipe", label: "Minha Equipe", icon: Users, href: "/configuracoes/equipe" },
+            { id: "contas", label: "Contas Bancárias", icon: Landmark, href: "/configuracoes/contas" },
+          ].map((tab) => {
+            const isActive = tab.id === "assinatura";
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
+
         {/* Status atual da conta */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 rounded-2xl border bg-card p-6 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[180px]">

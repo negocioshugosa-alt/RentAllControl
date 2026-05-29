@@ -39,6 +39,19 @@ export interface Company {
   subscription_expires_at?: string;
 }
 
+export interface BankAccount {
+  id: string;
+  company_id: string;
+  name: string;
+  bank_name?: string;
+  agency?: string;
+  account_number?: string;
+  type: "corrente" | "poupanca" | "outra";
+  balance: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- EQUIPAMENTOS ----
 export type EquipmentStatus = "disponivel" | "alugado" | "manutencao" | "inativo" | "vendido";
 export type EquipmentCategory =
@@ -184,9 +197,11 @@ export interface Transaction {
   notes?: string;
   asaas_charge_id?: string;
   recurrence_id?: string;
+  bank_account_id?: string;
   client?: Client;
   equipment?: Equipment;
   contract?: Contract;
+  bank_accounts?: { name: string };
   created_at: string;
   updated_at: string;
 }
