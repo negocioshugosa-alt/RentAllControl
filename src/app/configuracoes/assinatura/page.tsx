@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Invoice {
   id: string;
@@ -22,6 +23,7 @@ interface Invoice {
 }
 
 export default function AssinaturaPage() {
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState<any>(null);
   const [company, setCompany] = useState<any>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -96,6 +98,7 @@ export default function AssinaturaPage() {
           if (comp) {
             setCompany(comp);
             toast.success("Assinatura sincronizada com sucesso!");
+            queryClient.invalidateQueries({ queryKey: ["company-context"] });
           }
         }
 
@@ -138,7 +141,8 @@ export default function AssinaturaPage() {
       if (!res.ok) throw new Error(result.error || "Erro ao assinar");
 
       toast.success("Assinatura criada com sucesso! Carregando faturas...");
-      
+      queryClient.invalidateQueries({ queryKey: ["company-context"] });
+
       const loaded = await loadData();
       if (loaded && loaded.invoices && loaded.invoices.length > 0) {
         const pendingInvoice = loaded.invoices.find((inv: any) => inv.status === "pendente");

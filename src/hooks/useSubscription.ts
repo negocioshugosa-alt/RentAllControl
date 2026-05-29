@@ -34,5 +34,6 @@ export function useSubscription() {
     isReadOnly,
     trialDaysLeft,
     isLoading,
+    company,
   };
 }

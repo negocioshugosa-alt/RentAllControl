@@ -8,7 +8,7 @@ interface Props {
 
 export function TrialExpiredBanner({ isPastDue = false }: Props) {
   return (
-    <div className="w-full bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 text-white px-4 py-3 text-center text-sm font-medium flex flex-col sm:flex-row items-center justify-center gap-3 shadow-md border-b border-orange-500/20 relative z-50 animate-fade-in">
+    <div className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white px-4 py-3 text-center text-sm font-medium flex flex-col sm:flex-row items-center justify-center gap-3 shadow-md border-b border-red-500/20 relative z-50 animate-fade-in">
       <div className="flex items-center gap-2">
         <AlertTriangle className="w-4 h-4 text-white animate-pulse flex-shrink-0" />
         <span>
@@ -25,7 +25,7 @@ export function TrialExpiredBanner({ isPastDue = false }: Props) {
       </div>
       <Link
         href="/configuracoes/assinatura"
-        className="flex items-center gap-1.5 bg-white text-orange-700 px-3.5 py-1 rounded-full text-xs font-bold hover:bg-orange-50 transition-all shadow-sm hover:scale-105 active:scale-95"
+        className="flex items-center gap-1.5 bg-white text-red-600 px-3.5 py-1 rounded-full text-xs font-bold hover:bg-red-50 transition-all shadow-sm hover:scale-105 active:scale-95"
       >
         <CreditCard className="w-3.5 h-3.5" />
         Renovar Assinatura
