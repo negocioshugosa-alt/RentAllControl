@@ -55,7 +55,8 @@ const mapTransactionType = (val: string): string => {
 
 const mapTransactionStatus = (val: string): string => {
   const norm = normalizeValue(val);
-  if (norm.includes("pago") || norm.includes("recebido") || norm.includes("quitado")) return "pago";
+  if (norm.includes("recebido")) return "recebido";
+  if (norm.includes("pago") || norm.includes("quitado")) return "pago";
   if (norm.includes("vencido") || norm.includes("atrasado")) return "vencido";
   if (norm.includes("cancelado")) return "cancelado";
   return "pendente"; // Default
@@ -421,7 +422,7 @@ export function CsvImportModal({ type, companyId, onClose, onSuccess }: Props) {
                 ) : (
                   <>
                     <li><strong>Tipo</strong>: receita ou despesa.</li>
-                    <li><strong>Status</strong>: pendente, pago, vencido ou cancelado.</li>
+                    <li><strong>Status</strong>: pendente, pago, recebido, vencido ou cancelado.</li>
                     <li><strong>Vínculo por Código</strong>: o código do equipamento inserido na planilha será vinculado de forma automática e inteligente ao equipamento existente na sua base.</li>
                   </>
                 )}

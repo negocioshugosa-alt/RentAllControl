@@ -43,12 +43,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // Map and filter transactions by calculated date
   const mappedTxs = txs.map((t) => ({
     ...t,
-    txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+    txDate: (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date
   }));
 
   const periodTxs = mappedTxs.filter((t) => t.txDate >= start && t.txDate <= end);
 
-  const monthRevenue = periodTxs.filter((t) => t.type === "receita" && t.status === "pago").reduce((s, t) => s + Number(t.amount), 0);
+  const monthRevenue = periodTxs.filter((t) => t.type === "receita" && (t.status === "pago" || t.status === "recebido")).reduce((s, t) => s + Number(t.amount), 0);
   const monthExpenses = periodTxs.filter((t) => t.type === "despesa" && t.status === "pago").reduce((s, t) => s + Number(t.amount), 0);
   const overdueReceivables = mappedTxs.filter((t) => t.type === "receita" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);
   const overduePayables = mappedTxs.filter((t) => t.type === "despesa" && (t.status === "vencido" || (t.status === "pendente" && t.due_date < todayStr))).reduce((s, t) => s + Number(t.amount), 0);

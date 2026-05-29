@@ -23,7 +23,7 @@ async function fetchCostCenterData(companyId: string, start: string, end: string
     .from("transactions")
     .select("equipment_id, type, amount, status, due_date, paid_date")
     .eq("company_id", companyId)
-    .eq("status", "pago");
+    .in("status", ["pago", "recebido"]);
 
   // Buscar contratos
   const { data: contracts } = await supabase

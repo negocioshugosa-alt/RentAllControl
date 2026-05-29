@@ -20,7 +20,7 @@ const schema = z.object({
   amount: z.number({ required_error: "Valor obrigatório" }).min(0.01, "Valor deve ser maior que zero"),
   due_date: z.string().min(1, "Data obrigatória"),
   paid_date: z.string().optional(),
-  status: z.enum(["pendente", "pago", "vencido", "cancelado"]),
+  status: z.enum(["pendente", "pago", "vencido", "cancelado", "recebido"]),
   client_id: z.string().optional(),
   supplier_id: z.string().optional(),
   equipment_id: z.string().optional(),
@@ -28,6 +28,7 @@ const schema = z.object({
   payment_method: z.string().optional(),
   notes: z.string().optional(),
   bank_account_id: z.string().optional(),
+  invoice_number: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -201,6 +202,7 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
       payment_method: transaction?.payment_method || "",
       notes: transaction?.notes || "",
       bank_account_id: (transaction as any)?.bank_account_id || "",
+      invoice_number: transaction?.invoice_number || "",
     },
   });
 
@@ -225,6 +227,7 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
       contract_id: data.contract_id || null,
       paid_date: data.paid_date || null,
       bank_account_id: data.bank_account_id || null,
+      invoice_number: data.invoice_number || null,
     };
 
     const { error } = isEdit
@@ -312,14 +315,23 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
               <label className="text-sm font-medium mb-1 block">Status *</label>
               <select {...register("status")} className="input w-full">
                 <option value="pendente">Pendente</option>
-                <option value="pago">Pago</option>
+                {txType === "receita" ? (
+                  <>
+                    <option value="pago">Pago</option>
+                    <option value="recebido">Recebido</option>
+                  </>
+                ) : (
+                  <option value="pago">Pago</option>
+                )}
                 <option value="vencido">Vencido</option>
                 <option value="cancelado">Cancelado</option>
               </select>
             </div>
-            {txStatus === "pago" && (
+            {(txStatus === "pago" || txStatus === "recebido") && (
               <div>
-                <label className="text-sm font-medium mb-1 block">Data de Pagamento</label>
+                <label className="text-sm font-medium mb-1 block">
+                  {txType === "receita" ? "Data de Recebimento" : "Data de Pagamento"}
+                </label>
                 <input {...register("paid_date")} type="date" className="input w-full" />
               </div>
             )}
@@ -334,6 +346,10 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
                 <option value="dinheiro">Dinheiro</option>
                 <option value="cheque">Cheque</option>
               </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Nº da Nota Fiscal</label>
+              <input {...register("invoice_number")} className="input w-full" placeholder="Ex: 000.123.456" />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Conta Bancária</label>

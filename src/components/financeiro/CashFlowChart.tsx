@@ -26,7 +26,7 @@ async function fetchCashFlowData(companyId: string) {
   return months.map((month) => {
     const key = format(month, "yyyy-MM");
     const txs = (data || []).filter((t) => t.due_date?.startsWith(key));
-    const revenue = txs.filter((t) => t.type === "receita" && t.status === "pago").reduce((s, t) => s + Number(t.amount), 0);
+    const revenue = txs.filter((t) => t.type === "receita" && (t.status === "pago" || t.status === "recebido")).reduce((s, t) => s + Number(t.amount), 0);
     const expenses = txs.filter((t) => t.type === "despesa" && t.status === "pago").reduce((s, t) => s + Number(t.amount), 0);
     return {
       month: format(month, "MMM/yy", { locale: ptBR }),

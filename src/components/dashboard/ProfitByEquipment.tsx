@@ -20,7 +20,7 @@ async function fetchProfitData(companyId: string) {
     .from("transactions")
     .select("equipment_id, contract_id, type, amount, status")
     .eq("company_id", companyId)
-    .eq("status", "pago");
+    .in("status", ["pago", "recebido"]);
 
   const contractIds = Array.from(new Set((transactions || [])
     .map((t) => t.contract_id)

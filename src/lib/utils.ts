@@ -184,6 +184,7 @@ export const CONTRACT_STATUS = [
 export const TRANSACTION_STATUS = [
   { value: "pendente", label: "Pendente", color: "warning" },
   { value: "pago", label: "Pago", color: "success" },
+  { value: "recebido", label: "Recebido", color: "success" },
   { value: "vencido", label: "Vencido", color: "destructive" },
   { value: "cancelado", label: "Cancelado", color: "muted" },
 ] as const;

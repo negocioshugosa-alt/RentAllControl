@@ -41,7 +41,7 @@ async function fetchTransactions(companyId: string, type: string, status: string
   results = results.map((t) => ({
     ...t,
     status: t.status === "pendente" && t.due_date < today ? "vencido" : t.status,
-    txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date,
+    txDate: (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date,
   }));
 
   // Filter by date range
@@ -58,6 +58,7 @@ async function fetchTransactions(companyId: string, type: string, status: string
 const statusBadge: Record<string, string> = {
   pendente: "badge-pendente",
   pago: "badge-pago",
+  recebido: "badge-pago",
   vencido: "badge-vencido",
   cancelado: "badge-inativo",
 };
@@ -65,6 +66,7 @@ const statusBadge: Record<string, string> = {
 const statusLabel: Record<string, string> = {
   pendente: "Pendente",
   pago: "Pago",
+  recebido: "Recebido",
   vencido: "Vencido",
   cancelado: "Cancelado",
 };
@@ -94,21 +96,21 @@ export default function FinanceiroPage() {
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (payload: { id: string; status: "pago" | "recebido" }) => {
       if (isReadOnly) {
         throw new Error("Sua assinatura ou período de testes expirou. Ative ou regularize sua assinatura para realizar alterações.");
       }
       const supabase = createClient();
       const { error } = await supabase
         .from("transactions")
-        .update({ status: "pago", paid_date: new Date().toISOString().split("T")[0] })
-        .eq("id", id);
+        .update({ status: payload.status, paid_date: new Date().toISOString().split("T")[0] })
+        .eq("id", payload.id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
       router.refresh();
-      toast.success("Lançamento marcado como pago!");
+      toast.success("Lançamento marcado como liquidado!");
     },
     onError: (err: any) => toast.error(err.message || "Erro ao atualizar lançamento"),
   });
@@ -236,6 +238,7 @@ export default function FinanceiroPage() {
             <option value="">Todos os status</option>
             <option value="pendente">Pendente</option>
             <option value="pago">Pago</option>
+            <option value="recebido">Recebido</option>
             <option value="vencido">Vencido</option>
             <option value="cancelado">Cancelado</option>
           </select>
@@ -275,7 +278,15 @@ export default function FinanceiroPage() {
                       <p className="font-medium text-sm">{tx.description}</p>
                       <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 items-center mt-0.5">
                         {tx.paid_date && (
-                          <span className="text-xs text-muted-foreground">Pago em {formatDate(tx.paid_date)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {tx.type === "receita" ? "Recebido em " : "Pago em "}
+                            {formatDate(tx.paid_date)}
+                          </span>
+                        )}
+                        {tx.invoice_number && (
+                          <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                            📄 NF: {tx.invoice_number}
+                          </span>
                         )}
                         {(tx as any).bank_accounts?.name && (
                           <span className="text-xs font-semibold text-blue-500 dark:text-blue-400 flex items-center gap-1">
@@ -309,11 +320,11 @@ export default function FinanceiroPage() {
                     </td>
                     <td>
                       <div className="flex items-center gap-1">
-                        {tx.status !== "pago" && tx.status !== "cancelado" && (
+                        {tx.status !== "pago" && tx.status !== "recebido" && tx.status !== "cancelado" && (
                           <button
-                            onClick={() => markPaidMutation.mutate(tx.id)}
+                            onClick={() => markPaidMutation.mutate({ id: tx.id, status: tx.type === "receita" ? "recebido" : "pago" })}
                             className="p-1.5 hover:bg-green-500/10 rounded-lg text-muted-foreground hover:text-green-600 transition-colors"
-                            title="Marcar como pago"
+                            title={tx.type === "receita" ? "Marcar como recebido" : "Marcar como pago"}
                           >
                             <CheckCircle2 className="w-4 h-4" />
                           </button>

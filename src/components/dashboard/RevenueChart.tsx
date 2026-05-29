@@ -35,7 +35,7 @@ async function fetchChartData(companyId: string) {
 
   return months.map((m) => {
     const txs = (transactions || []).filter((t) => {
-      const date = t.status === "pago" && t.paid_date ? t.paid_date : t.due_date;
+      const date = (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date;
       return date >= m.start && date <= m.end;
     });
     const revenueTotal = txs

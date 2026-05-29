@@ -164,7 +164,7 @@ export interface Contract {
 
 // ---- FINANCEIRO ----
 export type TransactionType = "receita" | "despesa";
-export type TransactionStatus = "pendente" | "pago" | "vencido" | "cancelado";
+export type TransactionStatus = "pendente" | "pago" | "vencido" | "cancelado" | "recebido";
 export type TransactionCategory =
   | "aluguel"
   | "caucao"
@@ -202,6 +202,7 @@ export interface Transaction {
   asaas_charge_id?: string;
   recurrence_id?: string;
   bank_account_id?: string;
+  invoice_number?: string;
   client?: Client;
   equipment?: Equipment;
   contract?: Contract;

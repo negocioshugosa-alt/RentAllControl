@@ -49,6 +49,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
 
   const statusLabels: Record<string, string> = {
     pago: "Pago",
+    recebido: "Recebido",
     pendente: "Pendente",
     vencido: "Vencido",
     cancelado: "Cancelado"
@@ -62,7 +63,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     const filteredTxs = (data || [])
       .map((t) => ({
         ...t,
-        txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+        txDate: (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date
       }))
       .filter((t) => t.txDate >= start && t.txDate <= end)
       .sort((a, b) => a.txDate.localeCompare(b.txDate));
@@ -95,7 +96,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     // Map and filter transactions by calculated date
     const mappedTxs = (transactions || []).map((t) => ({
       ...t,
-      txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+      txDate: (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date
     })).filter((t) => t.txDate >= start && t.txDate <= end);
 
     const eqWb = new ExcelJS.Workbook();
@@ -236,7 +237,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
 
     const mappedTxs = (transactions || []).map((t) => ({
       ...t,
-      txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+      txDate: (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date
     })).filter((t) => t.txDate >= start && t.txDate <= end);
 
     const eqWb = new ExcelJS.Workbook();
@@ -362,7 +363,7 @@ async function exportExcel(type: ReportType, companyId: string, companyName: str
     const paidTxs = txsList.map((t) => ({
       ...t,
       txDate: t.paid_date || t.due_date
-    })).filter((t) => t.status === "pago" && t.txDate >= start && t.txDate <= end);
+    })).filter((t) => (t.status === "pago" || t.status === "recebido") && t.txDate >= start && t.txDate <= end);
 
     const revenue = paidTxs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
     const costs = paidTxs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
@@ -619,7 +620,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
     const filteredTxs = (data || [])
       .map((t) => ({
         ...t,
-        txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+        txDate: (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date
       }))
       .filter((t) => t.txDate >= start && t.txDate <= end)
       .sort((a, b) => a.txDate.localeCompare(b.txDate));
@@ -654,7 +655,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
 
     const mappedTxs = (transactions || []).map((t) => ({
       ...t,
-      txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+      txDate: (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date
     })).filter((t) => t.txDate >= start && t.txDate <= end);
 
     for (const eq of list) {
@@ -757,7 +758,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
 
     const mappedTxs = (transactions || []).map((t) => ({
       ...t,
-      txDate: t.status === "pago" && t.paid_date ? t.paid_date : t.due_date
+      txDate: (t.status === "pago" || t.status === "recebido") && t.paid_date ? t.paid_date : t.due_date
     })).filter((t) => t.txDate >= start && t.txDate <= end);
 
     let totalRec = 0;
@@ -846,7 +847,7 @@ async function exportPdf(type: ReportType, companyId: string, companyName: strin
     const paidTxs = txsList.map((t) => ({
       ...t,
       txDate: t.paid_date || t.due_date
-    })).filter((t) => t.status === "pago" && t.txDate >= start && t.txDate <= end);
+    })).filter((t) => (t.status === "pago" || t.status === "recebido") && t.txDate >= start && t.txDate <= end);
 
     const revenue = paidTxs.filter((t) => t.type === "receita").reduce((s, t) => s + Number(t.amount), 0);
     const costs = paidTxs.filter((t) => t.type === "despesa").reduce((s, t) => s + Number(t.amount), 0);
