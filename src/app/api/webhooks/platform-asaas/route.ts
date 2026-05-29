@@ -1,11 +1,11 @@
 // src/app/api/webhooks/platform-asaas/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Log the webhook call
     await supabase.from("webhook_logs").insert({

@@ -62,7 +62,7 @@ export default function AssinaturaPage() {
         setBillingEmail(prof.email || "");
 
         if (comp.asaas_customer_id) {
-          const loadedInvoices = await loadInvoices();
+          const loadedInvoices = await loadInvoices(comp);
           return { profile: prof, company: comp, invoices: loadedInvoices };
         }
         return { profile: prof, company: comp, invoices: [] };
@@ -75,13 +75,30 @@ export default function AssinaturaPage() {
     return null;
   }
 
-  async function loadInvoices() {
+  async function loadInvoices(compObj?: any) {
+    const activeCompany = compObj || company;
     setInvoicesLoading(true);
     try {
       const res = await fetch("/api/platform/invoices");
       if (res.ok) {
         const data = await res.json();
         setInvoices(data);
+
+        // Auto-heal local state: Se há uma fatura paga, recarrega os dados da empresa do Supabase
+        const hasPaid = data.some((inv: any) => inv.status === "pago");
+        if (hasPaid && activeCompany && activeCompany.subscription_status !== "active") {
+          const supabase = createClient();
+          const { data: comp } = await supabase
+            .from("companies")
+            .select("*")
+            .eq("id", activeCompany.id)
+            .single();
+          if (comp) {
+            setCompany(comp);
+            toast.success("Assinatura sincronizada com sucesso!");
+          }
+        }
+
         return data;
       }
     } catch (e) {
