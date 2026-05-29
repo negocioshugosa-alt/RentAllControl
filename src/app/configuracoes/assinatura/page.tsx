@@ -299,135 +299,139 @@ export default function AssinaturaPage() {
           </div>
         </div>
 
-        {/* Formulário de Assinatura se não tiver assinatura ativa */}
-        {!hasSubscription && (
-          <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-6">
-            <div className="border-b pb-4">
-              <h3 className="text-lg font-bold font-display">Ativar Assinatura RentAllControl</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">Selecione seu plano e insira os dados de cobrança para ativar a conta.</p>
+        {/* Formulário de Assinatura (Sempre visível para permitir renovações, alterações de plano ou de forma de pagamento a qualquer tempo) */}
+        <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-6">
+          <div className="border-b pb-4">
+            <h3 className="text-lg font-bold font-display">
+              {hasSubscription ? "Renovar ou Alterar Assinatura" : "Ativar Assinatura RentAllControl"}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {hasSubscription 
+                ? "Altere seu plano, mude a forma de pagamento ou gere uma nova fatura de renovação a qualquer momento."
+                : "Selecione seu plano e insira os dados de cobrança para ativar a conta."}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubscribe} className="space-y-6">
+            {/* Seleção de Planos */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div
+                onClick={() => setSelectedPlan("essencial")}
+                className={`p-5 rounded-2xl border-2 cursor-pointer transition-all relative ${
+                  selectedPlan === "essencial" ? "border-primary bg-primary/5 shadow-md" : "hover:border-muted-foreground/30"
+                }`}
+              >
+                {selectedPlan === "essencial" && <Check className="w-5 h-5 text-primary absolute top-4 right-4" />}
+                <h4 className="font-bold text-lg font-display">Plano Essencial</h4>
+                <p className="text-xs text-muted-foreground mt-1">Para pequenas locadoras iniciando no mercado</p>
+                <p className="text-2xl font-black font-display text-primary mt-4">
+                  R$ 149,90 <span className="text-xs font-normal text-muted-foreground">/ mês</span>
+                </p>
+                <ul className="text-xs text-muted-foreground mt-4 space-y-1.5">
+                  <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Até 50 equipamentos</li>
+                  <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> 1 usuário administrador</li>
+                  <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Faturamento e Contratos básicos</li>
+                </ul>
+              </div>
+
+              <div
+                onClick={() => setSelectedPlan("pro")}
+                className={`p-5 rounded-2xl border-2 cursor-pointer transition-all relative ${
+                  selectedPlan === "pro" ? "border-primary bg-primary/5 shadow-md" : "hover:border-muted-foreground/30"
+                }`}
+              >
+                {selectedPlan === "pro" && <Check className="w-5 h-5 text-primary absolute top-4 right-4" />}
+                <h4 className="font-bold text-lg font-display flex items-center gap-2">
+                  Plano Pro
+                  <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">Recomendado</span>
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">Para locadoras com crescimento acelerado e equipes</p>
+                <p className="text-2xl font-black font-display text-primary mt-4">
+                  R$ 299,90 <span className="text-xs font-normal text-muted-foreground">/ mês</span>
+                </p>
+                <ul className="text-xs text-muted-foreground mt-4 space-y-1.5">
+                  <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Equipamentos ilimitados</li>
+                  <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Usuários e equipe ilimitados</li>
+                  <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Relatórios gerenciais avançados</li>
+                </ul>
+              </div>
             </div>
 
-            <form onSubmit={handleSubscribe} className="space-y-6">
-              {/* Seleção de Planos */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div
-                  onClick={() => setSelectedPlan("essencial")}
-                  className={`p-5 rounded-2xl border-2 cursor-pointer transition-all relative ${
-                    selectedPlan === "essencial" ? "border-primary bg-primary/5 shadow-md" : "hover:border-muted-foreground/30"
-                  }`}
-                >
-                  {selectedPlan === "essencial" && <Check className="w-5 h-5 text-primary absolute top-4 right-4" />}
-                  <h4 className="font-bold text-lg font-display">Plano Essencial</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Para pequenas locadoras iniciando no mercado</p>
-                  <p className="text-2xl font-black font-display text-primary mt-4">
-                    R$ 149,90 <span className="text-xs font-normal text-muted-foreground">/ mês</span>
-                  </p>
-                  <ul className="text-xs text-muted-foreground mt-4 space-y-1.5">
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Até 50 equipamentos</li>
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> 1 usuário administrador</li>
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Faturamento e Contratos básicos</li>
-                  </ul>
-                </div>
-
-                <div
-                  onClick={() => setSelectedPlan("pro")}
-                  className={`p-5 rounded-2xl border-2 cursor-pointer transition-all relative ${
-                    selectedPlan === "pro" ? "border-primary bg-primary/5 shadow-md" : "hover:border-muted-foreground/30"
-                  }`}
-                >
-                  {selectedPlan === "pro" && <Check className="w-5 h-5 text-primary absolute top-4 right-4" />}
-                  <h4 className="font-bold text-lg font-display flex items-center gap-2">
-                    Plano Pro
-                    <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">Recomendado</span>
-                  </h4>
-                  <p className="text-xs text-muted-foreground mt-1">Para locadoras com crescimento acelerado e equipes</p>
-                  <p className="text-2xl font-black font-display text-primary mt-4">
-                    R$ 299,90 <span className="text-xs font-normal text-muted-foreground">/ mês</span>
-                  </p>
-                  <ul className="text-xs text-muted-foreground mt-4 space-y-1.5">
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Equipamentos ilimitados</li>
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Usuários e equipe ilimitados</li>
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Relatórios gerenciais avançados</li>
-                  </ul>
+            {/* Informações de Faturamento */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+              <div className="md:col-span-2">
+                <h4 className="text-sm font-semibold mb-3">Dados de Cobrança</h4>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">CPF ou CNPJ para Faturamento *</label>
+                <input
+                  type="text"
+                  className="input w-full"
+                  placeholder="00.000.000/0000-00"
+                  value={cnpj}
+                  onChange={(e) => setCnpj(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Email de Cobrança *</label>
+                <input
+                  type="email"
+                  className="input w-full"
+                  placeholder="financeiro@empresa.com"
+                  value={billingEmail}
+                  onChange={(e) => setBillingEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium mb-2 block">Forma de Pagamento Preferencial</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer border p-3 rounded-xl flex-1 hover:bg-muted/30">
+                    <input
+                      type="radio"
+                      name="billingType"
+                      checked={billingType === "PIX"}
+                      onChange={() => setBillingType("PIX")}
+                    />
+                    <QrCode className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Pix</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer border p-3 rounded-xl flex-1 hover:bg-muted/30">
+                    <input
+                      type="radio"
+                      name="billingType"
+                      checked={billingType === "BOLETO"}
+                      onChange={() => setBillingType("BOLETO")}
+                    />
+                    <Landmark className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Boleto Bancário</span>
+                  </label>
                 </div>
               </div>
+            </div>
 
-              {/* Informações de Faturamento */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                <div className="md:col-span-2">
-                  <h4 className="text-sm font-semibold mb-3">Dados de Cobrança</h4>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">CPF ou CNPJ para Faturamento *</label>
-                  <input
-                    type="text"
-                    className="input w-full"
-                    placeholder="00.000.000/0000-00"
-                    value={cnpj}
-                    onChange={(e) => setCnpj(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Email de Cobrança *</label>
-                  <input
-                    type="email"
-                    className="input w-full"
-                    placeholder="financeiro@empresa.com"
-                    value={billingEmail}
-                    onChange={(e) => setBillingEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-sm font-medium mb-2 block">Forma de Pagamento Preferencial</label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer border p-3 rounded-xl flex-1 hover:bg-muted/30">
-                      <input
-                        type="radio"
-                        name="billingType"
-                        checked={billingType === "PIX"}
-                        onChange={() => setBillingType("PIX")}
-                      />
-                      <QrCode className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-medium">Pix</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer border p-3 rounded-xl flex-1 hover:bg-muted/30">
-                      <input
-                        type="radio"
-                        name="billingType"
-                        checked={billingType === "BOLETO"}
-                        onChange={() => setBillingType("BOLETO")}
-                      />
-                      <Landmark className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-medium">Boleto Bancário</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <button
-                  type="submit"
-                  disabled={subscribing}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
-                >
-                  {subscribing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Gerando Assinatura no Asaas...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-4 h-4" />
-                      Ativar Plano com {selectedPlan === "pro" ? "R$ 299,90" : "R$ 149,90"}/mês
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+            <div className="flex justify-end pt-4">
+              <button
+                type="submit"
+                disabled={subscribing}
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+              >
+                {subscribing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processando no Asaas...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4" />
+                    {hasSubscription ? "Renovar Assinatura" : `Ativar Plano com ${selectedPlan === "pro" ? "R$ 299,90" : "R$ 149,90"}/mês`}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
 
         {/* Histórico de Mensalidades */}
         {hasSubscription && (

@@ -28,7 +28,7 @@ export function TrialExpiredBanner({ isPastDue = false }: Props) {
         className="flex items-center gap-1.5 bg-white text-orange-700 px-3.5 py-1 rounded-full text-xs font-bold hover:bg-orange-50 transition-all shadow-sm hover:scale-105 active:scale-95"
       >
         <CreditCard className="w-3.5 h-3.5" />
-        {isPastDue ? "Regularizar Assinatura" : "Ativar Assinatura"}
+        Renovar Assinatura
       </Link>
     </div>
   );
