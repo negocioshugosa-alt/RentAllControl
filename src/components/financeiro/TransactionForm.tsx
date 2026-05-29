@@ -29,6 +29,8 @@ const schema = z.object({
   notes: z.string().optional(),
   bank_account_id: z.string().optional(),
   invoice_number: z.string().optional(),
+  recurrence: z.enum(["nenhuma", "semanal", "mensal"]).optional(),
+  recurrence_periods: z.number().min(2, "Mínimo de 2 repetições").max(60, "Máximo de 60 repetições").optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -127,6 +129,22 @@ function SearchSelect({
   );
 }
 
+const addDays = (dateStr: string, days: number): string => {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+};
+
+const addMonths = (dateStr: string, months: number): string => {
+  const d = new Date(dateStr + "T12:00:00");
+  const expectedMonth = (d.getMonth() + months) % 12;
+  d.setMonth(d.getMonth() + months);
+  if (d.getMonth() !== expectedMonth && d.getMonth() !== (expectedMonth < 0 ? expectedMonth + 12 : expectedMonth)) {
+    d.setDate(0);
+  }
+  return d.toISOString().split("T")[0];
+};
+
 export function TransactionForm({ transaction, companyId, defaultType = "receita", onClose, onSuccess }: Props) {
   const isEdit = !!transaction;
   const { isReadOnly } = useSubscription();
@@ -203,11 +221,14 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
       notes: transaction?.notes || "",
       bank_account_id: (transaction as any)?.bank_account_id || "",
       invoice_number: transaction?.invoice_number || "",
+      recurrence: "nenhuma",
+      recurrence_periods: 2,
     },
   });
 
   const txType = watch("type");
   const txStatus = watch("status");
+  const recurrence = watch("recurrence");
   const clientId = watch("client_id");
   const supplierId = watch("supplier_id");
 
@@ -218,24 +239,95 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
     }
 
     const supabase = createClient();
-    const payload = {
-      ...data,
-      company_id: companyId,
-      client_id: data.client_id || null,
-      supplier_id: data.supplier_id || null,
-      equipment_id: data.equipment_id || null,
-      contract_id: data.contract_id || null,
-      paid_date: data.paid_date || null,
-      bank_account_id: data.bank_account_id || null,
-      invoice_number: data.invoice_number || null,
-    };
 
-    const { error } = isEdit
-      ? await supabase.from("transactions").update(payload).eq("id", transaction!.id)
-      : await supabase.from("transactions").insert(payload);
+    if (isEdit) {
+      const payload = {
+        type: data.type,
+        category: data.category,
+        description: data.description,
+        amount: data.amount,
+        due_date: data.due_date,
+        paid_date: data.paid_date || null,
+        status: data.status,
+        client_id: data.client_id || null,
+        supplier_id: data.supplier_id || null,
+        equipment_id: data.equipment_id || null,
+        contract_id: data.contract_id || null,
+        payment_method: data.payment_method || null,
+        notes: data.notes || null,
+        bank_account_id: data.bank_account_id || null,
+        invoice_number: data.invoice_number || null,
+      };
 
-    if (error) { toast.error(error.message); return; }
-    toast.success(isEdit ? "Lançamento atualizado!" : "Lançamento criado!");
+      const { error } = await supabase.from("transactions").update(payload).eq("id", transaction!.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Lançamento atualizado!");
+    } else {
+      if (data.type === "despesa" && data.recurrence && data.recurrence !== "nenhuma") {
+        const N = data.recurrence_periods || 2;
+        const recurrenceId = crypto.randomUUID();
+        const payloads = [];
+
+        for (let i = 0; i < N; i++) {
+          let calculatedDueDate = data.due_date;
+          if (i > 0) {
+            if (data.recurrence === "semanal") {
+              calculatedDueDate = addDays(data.due_date, i * 7);
+            } else if (data.recurrence === "mensal") {
+              calculatedDueDate = addMonths(data.due_date, i);
+            }
+          }
+
+          payloads.push({
+            company_id: companyId,
+            type: data.type,
+            category: data.category,
+            description: i === 0 ? data.description : `${data.description} (Parcela ${i + 1}/${N})`,
+            amount: data.amount,
+            due_date: calculatedDueDate,
+            paid_date: i === 0 ? (data.paid_date || null) : null,
+            status: i === 0 ? data.status : "pendente",
+            client_id: data.client_id || null,
+            supplier_id: data.supplier_id || null,
+            equipment_id: data.equipment_id || null,
+            contract_id: data.contract_id || null,
+            payment_method: i === 0 ? (data.payment_method || null) : null,
+            notes: data.notes || null,
+            bank_account_id: i === 0 ? (data.bank_account_id || null) : null,
+            invoice_number: data.invoice_number || null,
+            recurrence_id: recurrenceId,
+          });
+        }
+
+        const { error } = await supabase.from("transactions").insert(payloads);
+        if (error) { toast.error(error.message); return; }
+        toast.success(`${N} lançamentos recorrentes criados!`);
+      } else {
+        const payload = {
+          company_id: companyId,
+          type: data.type,
+          category: data.category,
+          description: data.description,
+          amount: data.amount,
+          due_date: data.due_date,
+          paid_date: data.paid_date || null,
+          status: data.status,
+          client_id: data.client_id || null,
+          supplier_id: data.supplier_id || null,
+          equipment_id: data.equipment_id || null,
+          contract_id: data.contract_id || null,
+          payment_method: data.payment_method || null,
+          notes: data.notes || null,
+          bank_account_id: data.bank_account_id || null,
+          invoice_number: data.invoice_number || null,
+        };
+
+        const { error } = await supabase.from("transactions").insert(payload);
+        if (error) { toast.error(error.message); return; }
+        toast.success("Lançamento criado!");
+      }
+    }
+
     onSuccess();
   }
 
@@ -363,6 +455,41 @@ export function TransactionForm({ transaction, companyId, defaultType = "receita
               </select>
             </div>
           </div>
+
+          {/* Recorrência (Apenas na criação de despesa) */}
+          {!isEdit && txType === "despesa" && (
+            <div className="p-4 rounded-xl border bg-muted/20 space-y-3">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Recorrência (Repetição)
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Repetir Lançamento</label>
+                  <select {...register("recurrence")} className="input w-full">
+                    <option value="nenhuma">Não repetir</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="mensal">Mensal</option>
+                  </select>
+                </div>
+                {recurrence !== "nenhuma" && (
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Quantidade de Vezes *</label>
+                    <input
+                      type="number"
+                      min={2}
+                      max={60}
+                      className="input w-full font-semibold"
+                      placeholder="Ex: 3"
+                      {...register("recurrence_periods", { valueAsNumber: true })}
+                    />
+                    {errors.recurrence_periods && (
+                      <p className="text-xs text-destructive mt-1">{errors.recurrence_periods.message}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Vinculações */}
           <section>
