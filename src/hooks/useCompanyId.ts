@@ -28,7 +28,7 @@ export function useCompanyContext() {
   return useQuery({
     queryKey: ["company-context"],
     queryFn: fetchCompanyContext,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 5, // 5 seconds instead of 10 minutes for fast updates on billing status
     retry: 3,
   });
 }
