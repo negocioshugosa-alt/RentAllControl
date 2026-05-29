@@ -149,10 +149,11 @@ export function CsvImportModal({ type, companyId, onClose, onSuccess }: Props) {
         "valor",
         "tipo (Opcoes: receita, despesa)",
         "categoria (Opcoes: aluguel, caucao, multa_contrato, combustivel, manutencao, pneus, pecas, seguro, ipva, lavagem, multas, salarios, marketing, escritorio, financiamento, impostos, outros)",
-        "status (Opcoes: pendente, pago, vencido, cancelado)",
+        "status (Opcoes: pendente, pago, recebido, vencido, cancelado)",
         "data_pagamento (AAAA-MM-DD)",
         "forma_pagamento (Opcoes: pix, boleto, cartao, transferencia, dinheiro, cheque)",
-        "codigo_equipamento (Debe coincidir com o codigo de um equipamento cadastrado)",
+        "nota_fiscal",
+        "codigo_equipamento (Deve coincidir com o codigo de um equipamento cadastrado)",
         "observacoes"
       ];
       exampleRow = [
@@ -161,9 +162,10 @@ export function CsvImportModal({ type, companyId, onClose, onSuccess }: Props) {
         "1200",
         "receita",
         "aluguel",
-        "pendente",
-        "",
-        "",
+        "recebido",
+        "2026-06-10",
+        "pix",
+        "NF-1234",
         "EQ-100",
         "Faturamento referente ao mês de Junho/2026."
       ];
@@ -320,6 +322,7 @@ export function CsvImportModal({ type, companyId, onClose, onSuccess }: Props) {
             status: mapTransactionStatus(row.status || ""),
             paid_date: row.data_pagamento?.trim() || null,
             payment_method: mapPaymentMethod(row.forma_pagamento || ""),
+            invoice_number: row.nota_fiscal?.trim() || null,
             equipment_id: eqId,
             notes: row.observacoes?.trim() || null,
           };
