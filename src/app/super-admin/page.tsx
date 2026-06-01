@@ -47,15 +47,19 @@ export default function SuperAdminPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [refreshing, setRefreshing] = useState(false);
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   async function loadData() {
     try {
-      const res = await fetch("/api/platform/admin/companies");
+      const res = await fetch("/api/platform/admin/companies", { cache: "no-store" });
       if (res.status === 403 || res.status === 401) {
+        const errorData = await res.json().catch(() => ({}));
+        setErrorMsg(`Acesso negado (${res.status}): ${JSON.stringify(errorData)}`);
         setAuthorized(false);
-        router.replace("/dashboard");
+        setLoading(false);
         return;
       }
-      if (!res.ok) throw new Error("Erro ao carregar dados");
+      if (!res.ok) throw new Error("Erro ao carregar dados: " + res.status);
 
       const data = await res.json();
       setCompanies(data.companies);
@@ -150,7 +154,20 @@ export default function SuperAdminPage() {
     );
   }
 
-  if (!authorized) return null;
+  if (!authorized) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-6 text-white">
+        <div className="text-center space-y-4 max-w-lg bg-red-500/10 p-8 rounded-2xl border border-red-500/20">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
+          <h2 className="text-xl font-bold text-red-400">Acesso Bloqueado</h2>
+          <p className="text-zinc-400 text-sm">{errorMsg || "Você não tem permissão para acessar esta página."}</p>
+          <button onClick={() => router.push("/dashboard")} className="mt-4 px-4 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20 transition-all">
+            Voltar ao Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const metricCards = [
     { label: "Total de Empresas", value: metrics.total, icon: Building2, gradient: "from-violet-600 to-indigo-600", shadow: "shadow-violet-500/20" },
