@@ -13,10 +13,11 @@ AS $$
 DECLARE
   new_company_id UUID;
 BEGIN
-  INSERT INTO public.companies (name, email)
+  INSERT INTO public.companies (name, email, subscription_trial_ends_at)
   VALUES (
     COALESCE(NEW.raw_user_meta_data->>'company_name', 'Minha Empresa'),
-    NEW.email
+    NEW.email,
+    NOW() + INTERVAL '30 days'
   )
   RETURNING id INTO new_company_id;
 
@@ -80,3 +81,6 @@ GRANT EXECUTE ON FUNCTION get_user_company_id() TO authenticated;
 GRANT EXECUTE ON FUNCTION handle_new_user() TO service_role;
 
 SELECT 'Setup completo!' as status;
+
+-- 7. Corrigir empresas existentes sem validade do trial
+UPDATE public.companies SET subscription_trial_ends_at = created_at + INTERVAL '30 days' WHERE subscription_status = 'trialing' AND subscription_trial_ends_at IS NULL;
