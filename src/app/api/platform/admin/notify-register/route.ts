@@ -11,8 +11,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true }); // Silenciosamente ignora se dados incompletos
     }
 
-    // Dispara a notificação de forma assíncrona (não bloqueia)
-    notifyNewCompany(companyName, email, plan || "essencial").catch(() => {});
+    // Aguarda o envio antes de retornar (senão a Vercel mata a função)
+    await notifyNewCompany(companyName, email, plan || "essencial");
 
     return NextResponse.json({ ok: true });
   } catch {

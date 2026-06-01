@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         .eq("id", targetCompanyId);
 
       // 🔔 Notificação Telegram
-      notifySubscriptionCanceled(company.name || "Empresa sem nome").catch(() => {});
+      await notifySubscriptionCanceled(company.name || "Empresa sem nome").catch(() => {});
     }
 
     return NextResponse.json({ ok: true });

@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       throw updateError;
     }
     // 🔔 Notificação Telegram
-    notifyNewSubscription(name, plan, billingType).catch(() => {});
+    await notifyNewSubscription(name, plan, billingType).catch(() => {});
 
     return NextResponse.json({ success: true, customerId: customerId, subscriptionId: (subscription as any).id });
   } catch (error: any) {
