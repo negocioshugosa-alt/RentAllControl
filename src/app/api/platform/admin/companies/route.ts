@@ -11,12 +11,13 @@ export async function GET() {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  // Verificação de Super Admin
-  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL?.toLowerCase().trim();
+  // Verificação de Super Admin (com fallback fixo caso a Vercel demore a propagar)
+  const envEmail = process.env.SUPER_ADMIN_EMAIL;
+  const superAdminEmail = (envEmail ? envEmail : "negocioshugosa@gmail.com").toLowerCase().trim();
   const userEmail = user.email?.toLowerCase().trim();
   
-  if (!superAdminEmail || userEmail !== superAdminEmail) {
-    console.log("Super Admin - Acesso Negado:", { envEmail: process.env.SUPER_ADMIN_EMAIL, userEmail: user.email });
+  if (userEmail !== superAdminEmail) {
+    console.log("Super Admin - Acesso Negado:", { envEmail, userEmail });
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
 
