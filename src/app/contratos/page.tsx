@@ -86,7 +86,36 @@ export default function ContratosPage() {
       router.refresh();
       toast.success("Contrato atualizado");
     },
-    onError: (err: any) => toast.error(err.message || "Erro ao atualizar contrato"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      if (isReadOnly) {
+        throw new Error("Sua assinatura ou período de testes expirou. Ative ou regularize sua assinatura para realizar alterações.");
+      }
+      const supabase = createClient();
+      
+      // Get the equipment ID of the contract before deleting it
+      const { data: contract } = await supabase
+        .from("contracts")
+        .select("equipment_id")
+        .eq("id", id)
+        .single();
+      
+      const { error } = await supabase.from("contracts").delete().eq("id", id);
+      if (error) throw error;
+      
+      if (contract?.equipment_id) {
+        const { updateEquipmentStatus } = await import("@/services/equipment");
+        await updateEquipmentStatus(supabase, contract.equipment_id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      router.refresh();
+      toast.success("Contrato excluído com sucesso");
+    },
+    onError: (err: any) => toast.error(err.message || "Erro ao excluir contrato"),
   });
 
   return (
@@ -217,6 +246,18 @@ export default function ContratosPage() {
                             ✕
                           </button>
                         )}
+                        <button
+                          onClick={() => {
+                            if (confirm("Deseja realmente excluir este contrato permanentemente?")) {
+                              deleteMutation.mutate(c.id);
+                            }
+                          }}
+                          disabled={deleteMutation.isPending}
+                          className="p-1.5 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500 transition-colors disabled:opacity-50"
+                          title="Excluir contrato"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
