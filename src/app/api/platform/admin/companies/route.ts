@@ -12,8 +12,11 @@ export async function GET() {
   }
 
   // Verificação de Super Admin
-  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
-  if (!superAdminEmail || user.email !== superAdminEmail) {
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL?.toLowerCase().trim();
+  const userEmail = user.email?.toLowerCase().trim();
+  
+  if (!superAdminEmail || userEmail !== superAdminEmail) {
+    console.log("Super Admin - Acesso Negado:", { envEmail: process.env.SUPER_ADMIN_EMAIL, userEmail: user.email });
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
 
