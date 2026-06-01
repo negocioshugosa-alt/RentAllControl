@@ -339,7 +339,11 @@ export default function SuperAdminPage() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-zinc-500 text-xs font-mono">{formatDate(company.created_at)}</td>
-                        <td className="px-5 py-4 text-zinc-500 text-xs font-mono">{formatDate(company.subscription_expires_at)}</td>
+                        <td className="px-5 py-4 text-zinc-500 text-xs font-mono">
+                          {company.subscription_status === "trialing" 
+                            ? formatDate(company.subscription_trial_ends_at) 
+                            : formatDate(company.subscription_expires_at)}
+                        </td>
                         <td className="px-5 py-4 text-right">
                           {company.asaas_customer_id && (
                             <a
