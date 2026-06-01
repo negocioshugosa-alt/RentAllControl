@@ -49,12 +49,16 @@ export default function RegisterPage() {
 
     toast.success("Conta criada! Verifique seu email.");
 
-    // Notifica o Super Admin (best-effort, não bloqueia)
-    fetch("/api/platform/admin/notify-register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyName: data.company_name, email: data.email }),
-    }).catch(() => {});
+    // Notifica o Super Admin (aguarda antes de redirecionar, mas nunca bloqueia)
+    try {
+      await fetch("/api/platform/admin/notify-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyName: data.company_name, email: data.email }),
+      });
+    } catch {
+      // Ignora erros — notificação é best-effort
+    }
 
     router.push("/login");
   }
