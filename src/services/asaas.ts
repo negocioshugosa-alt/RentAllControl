@@ -3,7 +3,7 @@ import type { AsaasCustomer, AsaasCharge } from "@/types";
 
 const ASAAS_BASE_URL = process.env.NEXT_PUBLIC_ASAAS_SANDBOX === "true"
   ? "https://sandbox.asaas.com/api/v3"
-  : "https://api.asaas.com/api/v3";
+  : "https://api.asaas.com/v3";
 
 async function asaasRequest<T>(
   path: string,
