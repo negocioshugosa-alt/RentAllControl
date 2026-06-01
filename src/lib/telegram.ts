@@ -18,7 +18,11 @@ export async function sendTelegramNotification({ title, body, emoji = "🔔" }: 
     return;
   }
 
-  const text = `${emoji} *${escapeMarkdown(title)}*\n\n${escapeMarkdown(body)}\n\n_RentAllControl • ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })} às ${new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}_`;
+  const date = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const time = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+  const bodyHtml = escapeHtml(body).replace(/\n/g, "\n");
+
+  const text = `${emoji} <b>${escapeHtml(title)}</b>\n\n${bodyHtml}\n\n<i>RentAllControl • ${date} às ${time}</i>`;
 
   try {
     const res = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
@@ -27,7 +31,7 @@ export async function sendTelegramNotification({ title, body, emoji = "🔔" }: 
       body: JSON.stringify({
         chat_id: chatId,
         text,
-        parse_mode: "MarkdownV2",
+        parse_mode: "HTML",
         disable_web_page_preview: true,
       }),
     });
@@ -41,9 +45,9 @@ export async function sendTelegramNotification({ title, body, emoji = "🔔" }: 
   }
 }
 
-// Escapa caracteres especiais do MarkdownV2 do Telegram
-function escapeMarkdown(text: string): string {
-  return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+// Escapa caracteres especiais do HTML
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // ─── Helpers de notificação pré-formatados ─────────────────────────
