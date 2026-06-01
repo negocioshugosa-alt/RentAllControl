@@ -44,7 +44,17 @@ export default function LoginPage() {
     });
 
     if (error) {
-      toast.error("Email ou senha inválidos");
+      if (error.message === "Invalid login credentials") {
+        // Check if user exists by trying to see if it's a wrong password or no account
+        toast.error("Email ou senha inválidos. Caso não tenha uma conta, crie uma gratuitamente.", {
+          action: {
+            label: "Criar conta",
+            onClick: () => router.push("/register"),
+          },
+        });
+      } else {
+        toast.error(error.message || "Erro ao fazer login");
+      }
       return;
     }
 
