@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       customerId = (customer as any).id;
     }
 
-    const price = plan === "pro" ? 299.90 : 149.90;
+    const price = plan === "pro" ? 299.90 : 5.00;
 
     // Vencimento em 3 dias para a primeira fatura
     const nextDueDate = new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0];

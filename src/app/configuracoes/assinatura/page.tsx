@@ -355,7 +355,7 @@ export default function AssinaturaPage() {
                 <h4 className="font-bold text-lg font-display">Plano Essencial</h4>
                 <p className="text-xs text-muted-foreground mt-1">Para pequenas locadoras iniciando no mercado</p>
                 <p className="text-2xl font-black font-display text-primary mt-4">
-                  R$ 149,90 <span className="text-xs font-normal text-muted-foreground">/ mês</span>
+                  R$ 5,00 <span className="text-xs font-normal text-muted-foreground">/ mês</span>
                 </p>
                 <ul className="text-xs text-muted-foreground mt-4 space-y-1.5">
                   <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> Até 50 equipamentos</li>
