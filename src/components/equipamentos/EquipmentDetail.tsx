@@ -20,6 +20,22 @@ const statusBadge: Record<string, string> = {
 };
 
 export function EquipmentDetail({ equipment: eq, onClose, onEdit }: Props) {
+  const { data: stockInfo } = useQuery({
+    queryKey: ["equipment-stock", eq.name],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("equipment")
+        .select("status")
+        .eq("name", eq.name)
+        .neq("status", "vendido");
+
+      const rented = (data || []).filter((e) => e.status === "alugado").length;
+      const available = (data || []).filter((e) => e.status === "disponivel").length;
+      return { rented, available };
+    },
+  });
+
   const { data: summary } = useQuery({
     queryKey: ["equipment-summary", eq.id],
     queryFn: async () => {
@@ -53,7 +69,17 @@ export function EquipmentDetail({ equipment: eq, onClose, onEdit }: Props) {
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
             <h2 className="text-lg font-bold font-display">{eq.name}</h2>
-            <p className="text-sm text-muted-foreground">{eq.code}</p>
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+              <span>{eq.code}</span>
+              {stockInfo && eq.status !== "vendido" && (
+                <>
+                  <span className="text-zinc-300">•</span>
+                  <span className="text-blue-500 font-semibold">Alugados: {stockInfo.rented}</span>
+                  <span className="text-zinc-300">/</span>
+                  <span className="text-emerald-500 font-semibold">Disponíveis: {stockInfo.available}</span>
+                </>
+              )}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">

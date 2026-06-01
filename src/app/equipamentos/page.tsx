@@ -67,14 +67,28 @@ export default function EquipamentosPage() {
 
   const { companyId } = useCompanyId();
 
+  const getStockInfo = (name: string) => {
+    const sameName = equipments.filter(
+      (e) => e.name.toLowerCase().trim() === name.toLowerCase().trim() && e.status !== "vendido"
+    );
+    const rented = sameName.filter((e) => e.status === "alugado").length;
+    const available = sameName.filter((e) => e.status === "disponivel").length;
+    return { rented, available };
+  };
+
   const { data: equipments = [], isLoading } = useQuery({
-    queryKey: ["equipamentos", companyId, search, statusFilter],
-    queryFn: () => fetchEquipment(companyId!, search, statusFilter),
+    queryKey: ["equipamentos", companyId],
+    queryFn: () => fetchEquipment(companyId!, "", ""),
     enabled: !!companyId,
   });
 
   const displayedEquipments = equipments.filter((eq) => {
-    if (!statusFilter && eq.status === "vendido") return false;
+    if (eq.status === "vendido" && statusFilter !== "vendido") return false;
+    if (statusFilter && eq.status !== statusFilter) return false;
+    if (search) {
+      const term = search.toLowerCase();
+      return eq.name.toLowerCase().includes(term) || eq.code.toLowerCase().includes(term);
+    }
     return true;
   });
 
@@ -251,7 +265,17 @@ export default function EquipamentosPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium truncate">{eq.name}</p>
-                          <p className="text-xs text-muted-foreground">{eq.code}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
+                            <span>{eq.code}</span>
+                            {eq.status !== "vendido" && (
+                              <>
+                                <span className="text-zinc-300">•</span>
+                                <span className="text-blue-500 font-semibold">Alugados: {getStockInfo(eq.name).rented}</span>
+                                <span className="text-zinc-300">/</span>
+                                <span className="text-emerald-500 font-semibold">Disponíveis: {getStockInfo(eq.name).available}</span>
+                              </>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </td>
