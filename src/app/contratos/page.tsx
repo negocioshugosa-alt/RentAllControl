@@ -101,7 +101,14 @@ export default function ContratosPage() {
         .select("equipment_id")
         .eq("id", id)
         .single();
-      
+
+      // Excluir lançamentos financeiros vinculados ao contrato
+      const { error: txError } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("contract_id", id);
+      if (txError) throw txError;
+
       const { error } = await supabase.from("contracts").delete().eq("id", id);
       if (error) throw error;
       
