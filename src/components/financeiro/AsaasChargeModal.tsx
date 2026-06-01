@@ -27,6 +27,11 @@ export function AsaasChargeModal({ transaction, onClose }: Props) {
 
   const createChargeMutation = useMutation({
     mutationFn: async () => {
+      const isSandbox = process.env.NEXT_PUBLIC_ASAAS_SANDBOX === "true";
+      const ASAAS_BASE_URL = isSandbox
+        ? "https://sandbox.asaas.com/api/v3"
+        : "https://api.asaas.com/v3";
+
       const supabase = createClient();
 
       // Get company Asaas key
@@ -52,7 +57,7 @@ export function AsaasChargeModal({ transaction, onClose }: Props) {
       let asaasCustomerId = client.asaas_customer_id;
 
       if (!asaasCustomerId) {
-        const res = await fetch("https://sandbox.asaas.com/api/v3/customers", {
+        const res = await fetch(`${ASAAS_BASE_URL}/customers`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "access_token": apiKey },
           body: JSON.stringify({ name: client.name, cpfCnpj: client.document, email: client.email, phone: client.mobile || client.phone }),
@@ -64,7 +69,7 @@ export function AsaasChargeModal({ transaction, onClose }: Props) {
       }
 
       // Create charge
-      const chargeRes = await fetch("https://sandbox.asaas.com/api/v3/payments", {
+      const chargeRes = await fetch(`${ASAAS_BASE_URL}/payments`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "access_token": apiKey },
         body: JSON.stringify({
@@ -90,7 +95,7 @@ export function AsaasChargeModal({ transaction, onClose }: Props) {
 
       // Fetch PIX QR code if needed
       if (billingType === "PIX") {
-        const pixRes = await fetch(`https://sandbox.asaas.com/api/v3/payments/${chargeData.id}/pixQrCode`, {
+        const pixRes = await fetch(`${ASAAS_BASE_URL}/payments/${chargeData.id}/pixQrCode`, {
           headers: { "access_token": apiKey },
         });
         if (pixRes.ok) {

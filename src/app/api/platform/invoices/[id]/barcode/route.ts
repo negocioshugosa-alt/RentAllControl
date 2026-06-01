@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const ASAAS_BASE_URL = process.env.NEXT_PUBLIC_ASAAS_SANDBOX === "true"
   ? "https://sandbox.asaas.com/api/v3"
-  : "https://api.asaas.com/api/v3";
+  : "https://api.asaas.com/v3";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

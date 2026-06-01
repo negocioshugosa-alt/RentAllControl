@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         .eq("id", targetCompanyId);
 
       // 🔔 Notificação Telegram
-      notifyPaymentReceived(
+      await notifyPaymentReceived(
         company.name || "Empresa sem nome",
         payment.value || 0,
         company.subscription_plan || "essencial"
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
         .eq("id", targetCompanyId);
 
       // 🔔 Notificação Telegram
-      notifyPaymentOverdue(
+      await notifyPaymentOverdue(
         company.name || "Empresa sem nome",
         payment.value || 0
       ).catch(() => {});
