@@ -1,6 +1,7 @@
 // src/app/api/webhooks/platform-asaas/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyPaymentReceived, notifyPaymentOverdue, notifySubscriptionCanceled } from "@/lib/telegram";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
     const companyId = payment.externalReference;
     const asaasCustomerId = payment.customer;
 
-    let query = supabase.from("companies").select("id, subscription_plan");
+    let query = supabase.from("companies").select("id, subscription_plan, name");
     if (companyId) {
       query = query.eq("id", companyId);
     } else if (asaasCustomerId) {
@@ -48,6 +49,13 @@ export async function POST(req: NextRequest) {
           subscription_expires_at: new Date(Date.now() + 35 * 86400000).toISOString(), // Estende por 35 dias (tolerância)
         })
         .eq("id", targetCompanyId);
+
+      // 🔔 Notificação Telegram
+      notifyPaymentReceived(
+        company.name || "Empresa sem nome",
+        payment.value || 0,
+        company.subscription_plan || "essencial"
+      ).catch(() => {});
 
       // Tratamento de excesso de usuários em caso de plano Essencial (Downgrade)
       if (company.subscription_plan === "essencial") {
@@ -82,6 +90,12 @@ export async function POST(req: NextRequest) {
         .from("companies")
         .update({ subscription_status: "past_due" })
         .eq("id", targetCompanyId);
+
+      // 🔔 Notificação Telegram
+      notifyPaymentOverdue(
+        company.name || "Empresa sem nome",
+        payment.value || 0
+      ).catch(() => {});
     }
 
     if (event === "SUBSCRIPTION_DELETED") {
@@ -90,6 +104,9 @@ export async function POST(req: NextRequest) {
         .from("companies")
         .update({ subscription_status: "canceled" })
         .eq("id", targetCompanyId);
+
+      // 🔔 Notificação Telegram
+      notifySubscriptionCanceled(company.name || "Empresa sem nome").catch(() => {});
     }
 
     return NextResponse.json({ ok: true });

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 // src/app/register/page.tsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,6 +48,14 @@ export default function RegisterPage() {
     }
 
     toast.success("Conta criada! Verifique seu email.");
+
+    // Notifica o Super Admin (best-effort, não bloqueia)
+    fetch("/api/platform/admin/notify-register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ companyName: data.company_name, email: data.email }),
+    }).catch(() => {});
+
     router.push("/login");
   }
 

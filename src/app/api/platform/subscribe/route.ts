@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { asaas } from "@/services/asaas";
+import { notifyNewSubscription } from "@/lib/telegram";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -78,6 +79,9 @@ export async function POST(req: Request) {
     if (updateError) {
       throw updateError;
     }
+    // 🔔 Notificação Telegram
+    notifyNewSubscription(name, plan, billingType).catch(() => {});
+
     return NextResponse.json({ success: true, customerId: customerId, subscriptionId: (subscription as any).id });
   } catch (error: any) {
     console.error("Erro na ativação da assinatura:", error);
