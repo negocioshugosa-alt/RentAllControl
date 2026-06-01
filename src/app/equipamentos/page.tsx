@@ -19,7 +19,7 @@ async function fetchEquipment(companyId: string, search: string, status: string)
   const supabase = createClient();
   let query = supabase
     .from("equipment")
-    .select("*")
+    .select("*, contracts(rented_quantity, status)")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 
@@ -67,12 +67,16 @@ export default function EquipamentosPage() {
 
   const { companyId } = useCompanyId();
 
-  const getStockInfo = (name: string) => {
-    const sameName = equipments.filter(
-      (e) => e.name.toLowerCase().trim() === name.toLowerCase().trim() && e.status !== "vendido"
+  const getStockInfo = (eq: any) => {
+    const activeContracts = (eq.contracts || []).filter((c: any) =>
+      ["ativo", "pendente"].includes(c.status)
     );
-    const rented = sameName.filter((e) => e.status === "alugado").length;
-    const available = sameName.filter((e) => e.status === "disponivel").length;
+    const rented = activeContracts.reduce(
+      (sum: number, c: any) => sum + (Number(c.rented_quantity) || 1),
+      0
+    );
+    const total = Number(eq.quantity) || 1;
+    const available = Math.max(0, total - rented);
     return { rented, available };
   };
 
@@ -270,9 +274,9 @@ export default function EquipamentosPage() {
                             {eq.status !== "vendido" && (
                               <>
                                 <span className="text-zinc-300">•</span>
-                                <span className="text-blue-500 font-semibold">Alugados: {getStockInfo(eq.name).rented}</span>
-                                <span className="text-zinc-300">/</span>
-                                <span className="text-emerald-500 font-semibold">Disponíveis: {getStockInfo(eq.name).available}</span>
+                                <span className="text-blue-500 font-semibold">Alugados: {getStockInfo(eq).rented}</span>
+                                <span className="text-zinc-300">•</span>
+                                <span className="text-emerald-500 font-semibold">Disponíveis: {getStockInfo(eq).available}</span>
                               </>
                             )}
                           </p>
