@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("company_id")
+      .select("company_id, companies(asaas_customer_id, subscription_status, subscription_expires_at)")
       .eq("user_id", user.id)
       .single();
 
@@ -28,13 +28,18 @@ export async function POST(req: Request) {
     }
 
     const companyId = profile.company_id;
+    const companyData = profile.companies as any;
+    let customerId = companyData?.asaas_customer_id;
 
-    // 1. Cadastra como cliente no Asaas da plataforma
-    const customer = await asaas.createCustomer({
-      name,
-      cpfCnpj: cnpj.replace(/\D/g, ""),
-      email,
-    });
+    if (!customerId) {
+      // 1. Cadastra como cliente no Asaas da plataforma
+      const customer = await asaas.createCustomer({
+        name,
+        cpfCnpj: cnpj.replace(/\D/g, ""),
+        email,
+      });
+      customerId = (customer as any).id;
+    }
 
     const price = plan === "pro" ? 299.90 : 149.90;
 
@@ -43,7 +48,7 @@ export async function POST(req: Request) {
 
     // 2. Cria a assinatura recorrente mensal
     const subscription = await asaas.createSubscription({
-      customer: (customer as any).id,
+      customer: customerId,
       billingType: billingType,
       value: price,
       cycle: "MONTHLY",
@@ -53,22 +58,27 @@ export async function POST(req: Request) {
     });
 
     // 3. Atualiza os dados da empresa no banco
+    const updatePayload: any = {
+      asaas_customer_id: customerId,
+      asaas_subscription_id: (subscription as any).id,
+      subscription_plan: plan,
+    };
+
+    // Se a empresa ainda não está ativa, mantém/inicia em trialing
+    if (companyData?.subscription_status !== "active") {
+      updatePayload.subscription_status = "trialing";
+      updatePayload.subscription_expires_at = new Date(Date.now() + 33 * 86400000).toISOString();
+    }
+
     const { error: updateError } = await supabase
       .from("companies")
-      .update({
-        asaas_customer_id: (customer as any).id,
-        asaas_subscription_id: (subscription as any).id,
-        subscription_plan: plan,
-        subscription_status: "trialing", // Mantém trialing até receber o primeiro webhook confirmando o pagamento
-        subscription_expires_at: new Date(Date.now() + 33 * 86400000).toISOString(), // 33 dias
-      })
+      .update(updatePayload)
       .eq("id", companyId);
 
     if (updateError) {
       throw updateError;
     }
-
-    return NextResponse.json({ success: true, customerId: (customer as any).id, subscriptionId: (subscription as any).id });
+    return NextResponse.json({ success: true, customerId: customerId, subscriptionId: (subscription as any).id });
   } catch (error: any) {
     console.error("Erro na ativação da assinatura:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
