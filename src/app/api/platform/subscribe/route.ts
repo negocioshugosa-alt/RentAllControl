@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       email,
     });
 
-    const price = plan === "pro" ? 299.90 : 5.00;
+    const price = plan === "pro" ? 299.90 : 149.90;
 
     // Vencimento em 3 dias para a primeira fatura
     const nextDueDate = new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0];
