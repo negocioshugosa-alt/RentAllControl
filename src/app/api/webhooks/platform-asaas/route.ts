@@ -4,21 +4,69 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyPaymentReceived, notifyPaymentOverdue, notifySubscriptionCanceled } from "@/lib/telegram";
 
 export async function POST(req: NextRequest) {
+  // ── 1. VALIDAÇÃO DE AUTENTICIDADE ──────────────────────────────────────────
+  const accessToken = req.headers.get("asaas-access-token");
+  const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
+
+  if (!expectedToken || !accessToken || accessToken !== expectedToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = createAdminClient();
+  let logId: string | null = null;
+
   try {
     const body = await req.json();
-    const supabase = createAdminClient();
 
-    // Log the webhook call
-    await supabase.from("webhook_logs").insert({
-      event: `platform_${body.event}`,
-      payload: body,
-      processed: false,
-    });
+    // ── 2. REGISTRAR LOG ───────────────────────────────────────────────────
+    const { data: log } = await supabase
+      .from("webhook_logs")
+      .insert({
+        event: `platform_${body.event}`,
+        payload: body,
+        processed: false,
+      })
+      .select("id")
+      .single();
+
+    logId = log?.id ?? null;
 
     const { event, payment } = body;
-    if (!payment) return NextResponse.json({ ok: true });
 
-    // Encontra a empresa pelo externalReference (ID da empresa) ou customer ID do Asaas
+    if (!payment) {
+      if (logId) {
+        await supabase
+          .from("webhook_logs")
+          .update({ processed: true })
+          .eq("id", logId);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // ── 3. IDEMPOTÊNCIA ─────────────────────────────────────────────────────
+    const idempotencyKey = payment.id ?? payment.subscription ?? null;
+
+    if (idempotencyKey) {
+      const { data: alreadyProcessed } = await supabase
+        .from("webhook_logs")
+        .select("id")
+        .eq("event", `platform_${event}`)
+        .eq("processed", true)
+        .filter("payload->payment->>id", "eq", idempotencyKey)
+        .maybeSingle();
+
+      if (alreadyProcessed) {
+        if (logId) {
+          await supabase
+            .from("webhook_logs")
+            .update({ processed: true, error: "duplicate_ignored" })
+            .eq("id", logId);
+        }
+        return NextResponse.json({ ok: true });
+      }
+    }
+
+    // ── 4. ENCONTRAR A EMPRESA ───────────────────────────────────────────────
     const companyId = payment.externalReference;
     const asaasCustomerId = payment.customer;
 
@@ -28,36 +76,46 @@ export async function POST(req: NextRequest) {
     } else if (asaasCustomerId) {
       query = query.eq("asaas_customer_id", asaasCustomerId);
     } else {
+      if (logId) {
+        await supabase
+          .from("webhook_logs")
+          .update({ processed: true, error: "no_company_reference" })
+          .eq("id", logId);
+      }
       return NextResponse.json({ ok: true });
     }
 
     const { data: company, error: companyError } = await query.maybeSingle();
 
     if (companyError || !company) {
-      console.warn("Empresa correspondente não encontrada para o webhook do Asaas:", companyError);
+      console.warn("Empresa não encontrada:", companyError);
+      if (logId) {
+        await supabase
+          .from("webhook_logs")
+          .update({ error: companyError?.message ?? "company_not_found" })
+          .eq("id", logId);
+      }
       return NextResponse.json({ ok: true });
     }
 
     const targetCompanyId = company.id;
 
+    // ── 5. PROCESSAR EVENTO ──────────────────────────────────────────────────
     if (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED") {
-      // Ativa a assinatura
       await supabase
         .from("companies")
         .update({
           subscription_status: "active",
-          subscription_expires_at: new Date(Date.now() + 35 * 86400000).toISOString(), // Estende por 35 dias (tolerância)
+          subscription_expires_at: new Date(Date.now() + 35 * 86400000).toISOString(),
         })
         .eq("id", targetCompanyId);
 
-      // 🔔 Notificação Telegram
       await notifyPaymentReceived(
         company.name || "Empresa sem nome",
         payment.value || 0,
         company.subscription_plan || "essencial"
       ).catch(() => {});
 
-      // Tratamento de excesso de usuários em caso de plano Essencial (Downgrade)
       if (company.subscription_plan === "essencial") {
         const { data: profiles } = await supabase
           .from("profiles")
@@ -66,10 +124,9 @@ export async function POST(req: NextRequest) {
           .order("created_at", { ascending: true });
 
         if (profiles && profiles.length > 1) {
-          // Identifica o admin mais antigo
-          const adminOwner = profiles.find((p) => p.role === "admin" || p.role === "owner") || profiles[0];
+          const adminOwner =
+            profiles.find((p) => p.role === "admin" || p.role === "owner") || profiles[0];
 
-          // Desativa todos os outros
           const otherProfileIds = profiles
             .filter((p) => p.id !== adminOwner.id)
             .map((p) => p.id);
@@ -85,13 +142,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (event === "PAYMENT_OVERDUE") {
-      // Marca como inadimplente
       await supabase
         .from("companies")
         .update({ subscription_status: "past_due" })
         .eq("id", targetCompanyId);
 
-      // 🔔 Notificação Telegram
       await notifyPaymentOverdue(
         company.name || "Empresa sem nome",
         payment.value || 0
@@ -99,19 +154,34 @@ export async function POST(req: NextRequest) {
     }
 
     if (event === "SUBSCRIPTION_DELETED") {
-      // Assinatura cancelada
       await supabase
         .from("companies")
         .update({ subscription_status: "canceled" })
         .eq("id", targetCompanyId);
 
-      // 🔔 Notificação Telegram
       await notifySubscriptionCanceled(company.name || "Empresa sem nome").catch(() => {});
+    }
+
+    // ── 6. MARCAR COMO PROCESSADO ────────────────────────────────────────────
+    if (logId) {
+      await supabase
+        .from("webhook_logs")
+        .update({ processed: true })
+        .eq("id", logId);
     }
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {
-    console.error("Erro no processamento do webhook da plataforma:", error);
+    console.error("Erro no webhook da plataforma:", error);
+
+    // ── 7. REGISTRAR ERRO ────────────────────────────────────────────────────
+    if (logId) {
+      await supabase
+        .from("webhook_logs")
+        .update({ error: error?.message ?? "unknown_error" })
+        .eq("id", logId);
+    }
+
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
