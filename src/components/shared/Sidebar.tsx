@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Wrench, Users, FileText,
   DollarSign, Bell, BarChart3, PieChart,
   Settings, LogOut, Zap, Building2, Truck,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -34,7 +34,8 @@ const navItems = [
   {
     title: "Financeiro",
     items: [
-      { href: "/financeiro", label: "Financeiro", icon: DollarSign },
+      { href: "/financeiro", label: "Lançamentos", icon: DollarSign },
+      { href: "/financeiro/conciliacao", label: "Conciliação Bancária", icon: RefreshCw },
       { href: "/centro-custo", label: "Centro de Custo", icon: PieChart },
       { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
     ],
@@ -79,9 +80,20 @@ export function Sidebar({
 
   return (
     <aside className={cn(
-      "sidebar flex flex-col h-screen sticky top-0 z-30 flex-shrink-0 transition-all duration-300",
+      "sidebar relative flex flex-col h-screen sticky top-0 z-30 flex-shrink-0 transition-all duration-300",
       isCollapsed ? "w-[72px]" : "w-[260px]"
     )}>
+      {/* Toggle Collapse Button on Border */}
+      {onToggleCollapse && (
+        <button
+          onClick={onToggleCollapse}
+          className="absolute -right-3 top-6 flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-[#161b22] text-muted-foreground hover:text-white transition-colors z-40"
+          title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+          style={{ backgroundColor: "hsl(var(--sidebar-bg))" }}
+        >
+          {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        </button>
+      )}
       {/* Logo / Empresa */}
       <div className={cn(
         "flex items-center border-b border-white/5 py-5 transition-all duration-300",
@@ -182,20 +194,7 @@ export function Sidebar({
           {!isCollapsed && <span>{loggingOut ? "Saindo…" : "Sair"}</span>}
         </button>
 
-        {/* Toggle Collapse Button */}
-        {onToggleCollapse && (
-          <button
-            onClick={onToggleCollapse}
-            className={cn(
-              "sidebar-link w-full text-muted-foreground hover:text-foreground transition-all duration-300 pt-3 mt-2 border-t border-white/5",
-              isCollapsed && "justify-center px-0 w-10 h-10 mx-auto rounded-lg border-t-0 pt-0 mt-0"
-            )}
-            title={isCollapsed ? "Expandir menu" : "Recolher menu"}
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            {!isCollapsed && <span>Recolher Menu</span>}
-          </button>
-        )}
+
       </div>
     </aside>
   );
