@@ -239,9 +239,7 @@ export function ConciliacaoBancaria({ companyId }: Props) {
             return;
           }
           setExtract(rows);
-          const reconciled = reconcile(rows, transactions);
-          setResult(reconciled);
-          toast.success(`${rows.length} lançamentos processados!`);
+          toast.success(`${rows.length} lançamentos lidos! Clique em Iniciar Conciliação.`);
         } catch {
           toast.error("Erro ao processar o arquivo. Verifique se é um CSV válido.");
         }
@@ -277,6 +275,13 @@ export function ConciliacaoBancaria({ companyId }: Props) {
     } finally {
       setExporting(false);
     }
+  };
+
+  const iniciarConciliacao = () => {
+    if (!extract) return;
+    const reconciled = reconcile(extract, transactions);
+    setResult(reconciled);
+    toast.success("Conciliação automática concluída!");
   };
 
   const reset = () => {
@@ -387,6 +392,19 @@ export function ConciliacaoBancaria({ companyId }: Props) {
           )}
         </div>
       </div>
+
+      {/* ── Botão de Iniciar Conciliação ── */}
+      {extract && !result && (
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={iniciarConciliacao}
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <RefreshCw className="w-5 h-5" />
+            Iniciar Conciliação Automática
+          </button>
+        </div>
+      )}
 
       {/* ── Painel de métricas (aparece após upload) ── */}
       {result && (
