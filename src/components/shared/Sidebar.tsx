@@ -13,6 +13,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
+import { useSubscription } from "@/hooks/useSubscription";
+import { Lock } from "lucide-react";
 
 const navItems = [
   {
@@ -62,6 +64,7 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const { hasConciliationAddon } = useSubscription();
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -153,7 +156,16 @@ export function Sidebar({
                           <span className="absolute -top-1 -right-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--sidebar-bg)] animate-pulse" />
                         )}
                       </div>
-                      {!isCollapsed && <span className="flex-1 transition-opacity duration-300">{item.label}</span>}
+                      {!isCollapsed && (
+                        <span className="flex-1 transition-opacity duration-300 flex items-center gap-1.5">
+                          {item.label}
+                          {item.href === "/financeiro/conciliacao" && !hasConciliationAddon && (
+                            <span title="Módulo Adicional (Requer Assinatura)">
+                              <Lock className="w-3 h-3 text-amber-500" />
+                            </span>
+                          )}
+                        </span>
+                      )}
                       {!isCollapsed && item.badge && alertCount > 0 && (
                         <>
                           <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1 animate-pulse">
