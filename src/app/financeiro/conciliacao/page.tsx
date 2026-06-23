@@ -5,14 +5,19 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { ConciliacaoBancaria } from "@/components/financeiro/ConciliacaoBancaria";
 import { useSubscription } from "@/hooks/useSubscription";
-import { Lock, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Lock, RefreshCw, CheckCircle2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
 export default function ConciliacaoPage() {
   const { companyId } = useCompanyId();
-  const { hasConciliationAddon, isLoading } = useSubscription();
+  const { hasConciliationAddon, isReadOnly, isLoading } = useSubscription();
 
   if (isLoading) return null;
+
+  // Se o sistema está em modo leitura (expirado/inadimplente), bloquear tudo
+  const isBlocked = isReadOnly;
+  // Só liberar se não está bloqueado E tem o addon (comprado ou trial ativo)
+  const canUseConciliation = !isBlocked && hasConciliationAddon;
 
   return (
     <div className="flex flex-col flex-1">
@@ -22,9 +27,30 @@ export default function ConciliacaoPage() {
       />
 
       <div className="flex-1 p-6 space-y-4">
-        {companyId && hasConciliationAddon ? (
+        {companyId && canUseConciliation ? (
           <ConciliacaoBancaria companyId={companyId} />
+        ) : isBlocked ? (
+          /* Tela de bloqueio por modo leitura */
+          <div className="max-w-2xl mx-auto mt-12 bg-card border border-rose-500/20 rounded-2xl p-8 md:p-12 text-center shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-rose-500 to-red-500" />
+            <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShieldAlert className="w-10 h-10 text-rose-500" />
+            </div>
+            <h2 className="text-2xl font-black font-display text-foreground mb-3">
+              Módulo Bloqueado
+            </h2>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Sua assinatura está expirada ou com pendência financeira. O sistema está em <strong>Modo Leitura</strong>. Renove sua assinatura para voltar a utilizar a Conciliação Bancária.
+            </p>
+            <Link
+              href="/configuracoes/assinatura"
+              className="inline-flex items-center gap-2 bg-rose-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-600 transition-all shadow-sm"
+            >
+              Renovar Assinatura
+            </Link>
+          </div>
         ) : (
+          /* Paywall - não comprou o módulo */
           <div className="max-w-3xl mx-auto mt-8 bg-card border rounded-2xl p-8 md:p-12 text-center shadow-sm relative overflow-hidden">
             <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
             <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
@@ -79,3 +105,4 @@ export default function ConciliacaoPage() {
     </div>
   );
 }
+
