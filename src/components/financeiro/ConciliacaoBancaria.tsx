@@ -1,6 +1,6 @@
 // src/components/financeiro/ConciliacaoBancaria.tsx
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Upload, FileText, CheckCircle2, XCircle, AlertCircle,
@@ -200,6 +200,37 @@ export function ConciliacaoBancaria({ companyId }: Props) {
   const [filterStatus, setFilterStatus] = useState<"" | MatchStatus>("");
   const [exporting, setExporting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Carrega do sessionStorage ao montar o componente
+  useEffect(() => {
+    try {
+      const savedExtract = sessionStorage.getItem("conciliacao_extract");
+      const savedResult = sessionStorage.getItem("conciliacao_result");
+      const savedFileName = sessionStorage.getItem("conciliacao_fileName");
+      
+      if (savedExtract) setExtract(JSON.parse(savedExtract));
+      if (savedResult) setResult(JSON.parse(savedResult));
+      if (savedFileName) setFileName(savedFileName);
+    } catch (err) {
+      console.error("Erro ao restaurar conciliação", err);
+    }
+  }, []);
+
+  // Salva no sessionStorage sempre que mudar
+  useEffect(() => {
+    if (extract) sessionStorage.setItem("conciliacao_extract", JSON.stringify(extract));
+    else sessionStorage.removeItem("conciliacao_extract");
+  }, [extract]);
+
+  useEffect(() => {
+    if (result) sessionStorage.setItem("conciliacao_result", JSON.stringify(result));
+    else sessionStorage.removeItem("conciliacao_result");
+  }, [result]);
+
+  useEffect(() => {
+    if (fileName) sessionStorage.setItem("conciliacao_fileName", fileName);
+    else sessionStorage.removeItem("conciliacao_fileName");
+  }, [fileName]);
 
   // Busca todas as transações pagas da empresa para cruzar com o extrato
   const { data: transactions = [], isLoading: loadingTx } = useQuery({
