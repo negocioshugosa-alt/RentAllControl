@@ -5,7 +5,7 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { ConciliacaoBancaria } from "@/components/financeiro/ConciliacaoBancaria";
 import { useSubscription } from "@/hooks/useSubscription";
-import { Lock, RefreshCw, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Lock, RefreshCw, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 export default function ConciliacaoPage() {
@@ -34,15 +34,6 @@ export default function ConciliacaoPage() {
           <div className="max-w-3xl mx-auto mt-8 bg-card border rounded-2xl p-8 md:p-12 text-center shadow-sm relative overflow-hidden">
             <div className={`absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r ${isBlocked ? 'from-rose-500 to-red-500' : 'from-emerald-500 to-teal-500'}`} />
             
-            {/* Aviso de pendência quando bloqueado */}
-            {isBlocked && (
-              <div className="mb-8 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl p-4 flex items-center gap-3">
-                <ShieldAlert className="w-5 h-5 text-rose-500 flex-shrink-0" />
-                <p className="text-sm text-rose-700 dark:text-rose-400 text-left">
-                  Sua assinatura está expirada ou com pendência financeira. Renove seu plano para liberar este módulo.
-                </p>
-              </div>
-            )}
 
             <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
               <RefreshCw className="w-10 h-10 text-emerald-600" />
