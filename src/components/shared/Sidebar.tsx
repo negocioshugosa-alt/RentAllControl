@@ -109,7 +109,7 @@ export function Sidebar({
         "flex items-center border-b border-white/5 py-5 transition-all duration-300",
         isCollapsed ? "justify-center px-2" : "gap-2.5 px-4"
       )}>
-        <Logo iconOnly={isCollapsed} />
+        <Logo iconOnly={true} />
         {!isCollapsed && (
           <div className="min-w-0 flex-1 flex items-center justify-between transition-opacity duration-300 pl-2">
             <div className="min-w-0 pr-2">
@@ -119,7 +119,7 @@ export function Sidebar({
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0 mr-1"
+              className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0 mr-4"
               title="Sair do sistema"
             >
               <LogOut className="w-4 h-4" />
