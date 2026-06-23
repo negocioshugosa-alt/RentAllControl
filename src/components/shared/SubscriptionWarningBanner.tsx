@@ -19,7 +19,7 @@ export function SubscriptionWarningBanner({ daysRemaining, type }: Props) {
   const message =
     type === "trial"
       ? `Seu período de avaliação gratuita expira em ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}. Assine agora para não perder acesso às funcionalidades.`
-      : `Sua assinatura será renovada em ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}. Verifique seus dados de pagamento para evitar interrupções.`;
+      : `Sua assinatura expira em ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}. Verifique seus dados de pagamento para evitar interrupções.`;
 
   const ctaLabel =
     type === "trial" ? "Assinar Agora" : "Ver Assinatura";
