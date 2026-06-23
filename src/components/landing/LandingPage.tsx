@@ -8,6 +8,7 @@ import {
   Building2, Truck, Smartphone, Coffee, Laptop, HeartPulse, Layers,
   ClipboardCheck, ArrowUpRight, HelpCircle
 } from "lucide-react";
+import { Logo } from "@/components/shared/Logo";
 import { useState } from "react";
 
 const features = [
@@ -156,14 +157,7 @@ export function LandingPage() {
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-[#070a13]/85 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-18">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Zap className="w-4.5 h-4.5 text-white" />
-            </div>
-            <span className="font-display font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
-              RentAllControl
-            </span>
-          </div>
+          <Logo />
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
             <a href="#diferenciais" className="hover:text-blue-400 transition-colors duration-200">Diferenciais</a>
             <a href="#flexibilidade" className="hover:text-blue-400 transition-colors duration-200">Segmentos</a>
