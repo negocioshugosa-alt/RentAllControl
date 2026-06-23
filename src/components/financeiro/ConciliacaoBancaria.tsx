@@ -92,17 +92,35 @@ function parseCSV(text: string): ExtractRow[] {
 
 function parseAmount(raw: string): number {
   if (!raw) return NaN;
-  // Remove R$, espaços, pontos de milhar e troca vírgula por ponto
-  const cleaned = raw
-    .replace(/R\$\s?/g, "")
-    .replace(/\s/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  // Trata negativos entre parênteses: (1234,56) → -1234.56
+  let cleaned = raw.replace(/R\$\s?/g, "").replace(/\s/g, "");
+  
+  let isNegative = false;
   if (cleaned.startsWith("(") && cleaned.endsWith(")")) {
-    return -parseFloat(cleaned.slice(1, -1));
+    isNegative = true;
+    cleaned = cleaned.slice(1, -1);
   }
-  return parseFloat(cleaned);
+
+  // Formato BR (ex: 1.234,56 ou 1234,56)
+  if (cleaned.includes(",")) {
+    cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (cleaned.includes(".")) {
+    // Pode ser formato americano (1234.56 do Excel) ou milhar BR (1.234)
+    const parts = cleaned.split(".");
+    if (parts.length > 2) {
+      // Vários pontos (ex: 1.000.000) = milhar
+      cleaned = cleaned.replace(/\./g, "");
+    } else {
+      // Um ponto. Se tiver exatamente 3 dígitos após, assumimos milhar BR (ex: 1.234)
+      // Se for 1 ou 2 dígitos (ex: 74.9 ou 74.90), é decimal
+      if (parts[1].length === 3) {
+        cleaned = cleaned.replace(/\./g, "");
+      }
+      // Se for diferente de 3, mantemos o ponto como decimal
+    }
+  }
+
+  const val = parseFloat(cleaned);
+  return isNegative ? -val : val;
 }
 
 function addDays(date: string, days: number): string {
