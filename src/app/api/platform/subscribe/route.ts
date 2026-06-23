@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { plan, billingType, name, cnpj, email } = await req.json();
+    const { plan, billingType, name, cnpj, email, includeAddon } = await req.json();
 
     if (!plan || !billingType || !name || !cnpj || !email) {
       return NextResponse.json({ error: "Campos obrigatórios ausentes" }, { status: 400 });
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("company_id, companies(asaas_customer_id, subscription_status, subscription_expires_at)")
+      .select("company_id, companies(asaas_customer_id, asaas_subscription_id, subscription_status, subscription_expires_at)")
       .eq("user_id", user.id)
       .single();
 
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
     const companyId = profile.company_id;
     const companyData = profile.companies as any;
     let customerId = companyData?.asaas_customer_id;
+    let subscriptionId = companyData?.asaas_subscription_id;
 
     if (!customerId) {
       // 1. Cadastra como cliente no Asaas da plataforma
@@ -42,33 +43,48 @@ export async function POST(req: Request) {
       customerId = (customer as any).id;
     }
 
-    const price = plan === "pro" ? 299.90 : 149.90;
+    const basePrice = plan === "pro" ? 299.90 : 149.90;
+    const finalPrice = includeAddon ? basePrice + 59.90 : basePrice;
 
-    // Vencimento em 3 dias para a primeira fatura
+    // Vencimento em 3 dias para a primeira fatura (se nova)
     const nextDueDate = new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0];
 
-    // 2. Cria a assinatura recorrente mensal
-    const subscription = await asaas.createSubscription({
-      customer: customerId,
-      billingType: billingType,
-      value: price,
-      cycle: "MONTHLY",
-      nextDueDate: nextDueDate,
-      description: `Assinatura Plano ${plan === "pro" ? "Pro" : "Essencial"} - RentAllControl`,
-      externalReference: companyId,
-    });
+    const description = `Assinatura Plano ${plan === "pro" ? "Pro" : "Essencial"}${includeAddon ? " + Módulo Conciliação" : ""} - RentAllControl`;
 
-    // 3. Atualiza os dados da empresa no banco
     const updatePayload: any = {
       asaas_customer_id: customerId,
-      asaas_subscription_id: (subscription as any).id,
       subscription_plan: plan,
     };
+    if (includeAddon) {
+      updatePayload.has_conciliation_addon = true;
+    }
 
-    // Se a empresa ainda não está ativa, mantém/inicia em trialing
-    if (companyData?.subscription_status !== "active") {
-      updatePayload.subscription_status = "trialing";
-      updatePayload.subscription_expires_at = new Date(Date.now() + 33 * 86400000).toISOString();
+    if (!subscriptionId) {
+      // 2. Cria a assinatura recorrente mensal
+      const subscription = await asaas.createSubscription({
+        customer: customerId,
+        billingType: billingType,
+        value: finalPrice,
+        cycle: "MONTHLY",
+        nextDueDate: nextDueDate,
+        description: description,
+        externalReference: companyId,
+      });
+      subscriptionId = (subscription as any).id;
+      updatePayload.asaas_subscription_id = subscriptionId;
+
+      // Se a empresa ainda não está ativa, mantém/inicia em trialing
+      if (companyData?.subscription_status !== "active") {
+        updatePayload.subscription_status = "trialing";
+        updatePayload.subscription_expires_at = new Date(Date.now() + 33 * 86400000).toISOString();
+      }
+    } else {
+      // 3. Atualiza assinatura existente
+      await asaas.updateSubscription(subscriptionId, {
+        value: finalPrice,
+        billingType: billingType,
+        description: description,
+      });
     }
 
     const { error: updateError } = await supabase
@@ -82,7 +98,7 @@ export async function POST(req: Request) {
     // 🔔 Notificação Telegram
     await notifyNewSubscription(name, plan, billingType).catch(() => {});
 
-    return NextResponse.json({ success: true, customerId: customerId, subscriptionId: (subscription as any).id });
+    return NextResponse.json({ success: true, customerId: customerId, subscriptionId: subscriptionId });
   } catch (error: any) {
     console.error("Erro na ativação da assinatura:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
