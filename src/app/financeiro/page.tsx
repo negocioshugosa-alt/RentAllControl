@@ -73,10 +73,7 @@ const statusLabel: Record<string, string> = {
   cancelado: "Cancelado",
 };
 
-type Tab = "lancamentos" | "conciliacao";
-
 export default function FinanceiroPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("lancamentos");
   const [type, setType] = useState<"" | "receita" | "despesa">("");
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
@@ -154,8 +151,6 @@ export default function FinanceiroPage() {
         subtitle="Contas a receber e a pagar"
         actions={
           <div className="flex gap-2">
-            {activeTab === "lancamentos" && (
-              <>
                 <button
                   onClick={() => setShowImport(true)}
                   className="flex items-center gap-2 border border-border px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
@@ -177,48 +172,12 @@ export default function FinanceiroPage() {
                   <TrendingDown className="w-4 h-4" />
                   + Despesa
                 </button>
-              </>
-            )}
           </div>
         }
       />
 
       <div className="flex-1 p-6 space-y-4">
 
-        {/* ── Tabs ── */}
-        <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit">
-          <button
-            onClick={() => setActiveTab("lancamentos")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "lancamentos"
-                ? "bg-card shadow text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <DollarSign className="w-4 h-4" />
-            Lançamentos
-          </button>
-          <button
-            onClick={() => setActiveTab("conciliacao")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "conciliacao"
-                ? "bg-card shadow text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <GitMerge className="w-4 h-4" />
-            Conciliação Bancária
-          </button>
-        </div>
-
-        {/* ── Aba: Conciliação ── */}
-        {activeTab === "conciliacao" && companyId && (
-          <ConciliacaoBancaria companyId={companyId} />
-        )}
-
-        {/* ── Aba: Lançamentos ── */}
-        {activeTab === "lancamentos" && (
-          <>
             {/* Period filter */}
             <div className="flex flex-col sm:flex-row gap-4 p-5 rounded-xl border bg-card items-end">
               <div>
@@ -399,8 +358,6 @@ export default function FinanceiroPage() {
                 </tbody>
               </table>
             </div>
-          </>
-        )}
       </div>
 
       {payModalItem && (
