@@ -15,6 +15,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Lock } from "lucide-react";
+import { Logo } from "./Logo";
 
 const navItems = [
   {
@@ -108,15 +109,7 @@ export function Sidebar({
         "flex items-center border-b border-white/5 py-5 transition-all duration-300",
         isCollapsed ? "justify-center px-2" : "gap-2.5 px-4"
       )}>
-        {logoUrl ? (
-          <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
-            <Image src={logoUrl} alt={companyName} width={36} height={36} className="w-full h-full object-cover" />
-          </div>
-        ) : (
-          <div className="w-9 h-9 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold shadow-inner">
-            {initials || <Zap className="w-4 h-4" />}
-          </div>
-        )}
+        <Logo iconOnly={isCollapsed} />
         {!isCollapsed && (
           <div className="min-w-0 flex-1 flex items-center justify-between transition-opacity duration-300 pl-2">
             <div className="min-w-0 pr-2">
