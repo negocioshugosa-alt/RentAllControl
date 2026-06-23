@@ -23,7 +23,15 @@ export function useSubscription() {
     trialDaysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
   }
 
-  const isPastDue = status === "past_due";
+  let isSubscriptionExpired = false;
+  const expiresAt = company?.subscription_expires_at || null;
+  if (status === "active" && expiresAt) {
+    const end = new Date(expiresAt);
+    const now = new Date();
+    isSubscriptionExpired = end < now;
+  }
+
+  const isPastDue = status === "past_due" || isSubscriptionExpired;
   const isReadOnly = isTrialExpired || isPastDue;
 
   return {
