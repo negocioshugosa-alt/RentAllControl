@@ -115,6 +115,20 @@ const plans = [
     ],
     highlight: true,
     cta: "Experimentar 30 dias grátis",
+  },
+  {
+    name: "Conciliação Bancária",
+    price: "R$ 59,90",
+    period: "/mês",
+    desc: "Módulo Adicional: Importe planilhas, feche seu caixa de forma automática e acabe com perdas financeiras não detectadas.",
+    features: [
+      "Importação Inteligente (OFX/CSV/Excel)",
+      "Identificação automática de taxas",
+      "Fechamento de caixa automatizado",
+      "Prevenção de fraudes e divergências"
+    ],
+    highlight: false,
+    cta: "Incluir no Plano",
   }
 ];
 
@@ -199,14 +213,14 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/register"
-              className="flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-blue-500 transition-colors w-full sm:w-auto justify-center"
+              className="flex items-center gap-2 bg-blue-600/80 backdrop-blur-md border border-blue-500/30 shadow-[0_8px_32px_rgba(37,99,235,0.2)] text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-blue-600 hover:-translate-y-0.5 transition-all w-full sm:w-auto justify-center"
             >
               Testar Sistema Grátis
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
               href="#planos"
-              className="flex items-center gap-2 px-8 py-4 rounded-xl border border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 transition-colors font-semibold w-full sm:w-auto justify-center"
+              className="flex items-center gap-2 px-8 py-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(255,255,255,0.02)] hover:bg-white/10 hover:border-white/20 text-slate-300 transition-all font-semibold w-full sm:w-auto justify-center"
             >
               Ver Planos
             </Link>
@@ -241,8 +255,8 @@ export function LandingPage() {
               <div className="w-56 bg-[#090c17] p-5 flex-shrink-0 hidden lg:flex flex-col justify-between border-r border-white/[0.04]">
                 <div className="space-y-6">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center"><Zap className="w-4 h-4 text-white" /></div>
-                    <div className="h-3 bg-white/20 rounded w-20" />
+                    <Logo iconOnly />
+                    <div className="h-3 bg-white/20 rounded w-20 ml-1" />
                   </div>
                   <div className="space-y-4">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -454,13 +468,13 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {plans.map((plan, i) => (
               <div
                 key={i}
-                className={`relative rounded-3xl border p-8 flex flex-col justify-between transition-colors ${
+                className={`relative rounded-3xl border p-8 flex flex-col justify-between transition-colors backdrop-blur-md ${
                   plan.highlight 
-                    ? "bg-[#0a0e1a] border-slate-700/50" 
+                    ? "bg-[#0a0e1a]/80 border-slate-700/50 shadow-[0_8px_32px_rgba(255,255,255,0.02)]" 
                     : "bg-white/[0.02] border-white/[0.05]"
                 }`}
               >
@@ -507,33 +521,7 @@ export function LandingPage() {
             ))}
           </div>
 
-          {/* Módulo Adicional */}
-          <div className="max-w-3xl mx-auto mt-6">
-            <div className="relative rounded-3xl border border-white/[0.05] bg-white/[0.02] p-8 flex flex-col sm:flex-row items-center justify-between transition-colors">
-              <div className="flex-1 text-center sm:text-left mb-6 sm:mb-0">
-                <span className="text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full mb-4 inline-block">
-                  Módulo Adicional
-                </span>
-                <h3 className="font-bold text-xl md:text-2xl text-slate-100 mb-2">Conciliação Bancária</h3>
-                <p className="text-sm text-slate-400 font-normal leading-relaxed max-w-md">
-                  Importe planilhas OFX, Excel ou CSV. Feche seu caixa de forma automática, encontre divergências em segundos e acabe com as perdas financeiras não detectadas.
-                </p>
-              </div>
-              <div className="flex flex-col items-center sm:items-end sm:pl-8 border-t sm:border-t-0 sm:border-l border-white/[0.05] pt-6 sm:pt-0 mt-2 sm:mt-0 w-full sm:w-auto">
-                <div className="flex items-end gap-1 mb-3">
-                  <span className="text-sm text-slate-400 mb-1.5 font-medium">+</span>
-                  <span className="font-display text-3xl font-black text-white">R$ 59,90</span>
-                  <span className="text-sm text-slate-400 mb-1.5 font-medium">/mês</span>
-                </div>
-                <Link
-                  href="/register?addon=conciliacao"
-                  className="bg-white/[0.05] text-white hover:bg-white/[0.1] text-sm font-bold px-6 py-3 rounded-xl transition-colors w-full sm:w-auto text-center border border-white/[0.05]"
-                >
-                  Incluir no Plano
-                </Link>
-              </div>
-            </div>
-          </div>
+          {/* O Módulo Adicional foi movido para dentro da grade principal acima */}
         </div>
       </section>
 
@@ -554,8 +542,8 @@ export function LandingPage() {
       {/* CTA Final */}
       <section className="py-24 px-6 relative z-10 border-t border-white/[0.04] bg-gradient-to-b from-[#090c17] to-[#04060b] text-center">
         <div className="max-w-3xl mx-auto space-y-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/15">
-            <Zap className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-center mx-auto mb-6">
+            <Logo iconOnly className="scale-150" />
           </div>
           <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight leading-tight">
             Pronto para transformar a gestão de sua locadora?
@@ -580,10 +568,8 @@ export function LandingPage() {
       <footer className="py-12 px-6 border-t border-white/[0.04] bg-[#04060b] text-slate-400 text-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center shadow-md">
-              <Zap className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="font-display font-black text-sm text-slate-200 tracking-tight">RentAllControl</span>
+            <Logo iconOnly />
+            <span className="font-display font-black text-sm text-slate-200 tracking-tight ml-1">RentAllControl</span>
           </div>
           <p className="text-slate-500 text-xs md:text-sm text-center">
             © {new Date().getFullYear()} RentAllControl. Todos os direitos reservados.
