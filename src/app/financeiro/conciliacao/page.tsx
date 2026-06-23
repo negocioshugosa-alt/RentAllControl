@@ -10,12 +10,12 @@ import Link from "next/link";
 
 export default function ConciliacaoPage() {
   const { companyId } = useCompanyId();
-  const { hasConciliationAddon, isReadOnly, isLoading } = useSubscription();
+  const { hasConciliationAddon, isReadOnly, isTrialExpired, isLoading } = useSubscription();
 
   if (isLoading) return null;
 
-  // Se o sistema está em modo leitura (expirado/inadimplente), bloquear tudo
-  const isBlocked = isReadOnly;
+  // Se o sistema está em modo leitura (expirado/inadimplente/trial expirado), bloquear tudo
+  const isBlocked = isReadOnly || isTrialExpired;
   // Só liberar se não está bloqueado E tem o addon (comprado ou trial ativo)
   const canUseConciliation = !isBlocked && hasConciliationAddon;
 
@@ -54,7 +54,7 @@ export default function ConciliacaoPage() {
               Módulo de Conciliação Bancária
             </h2>
             <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
-              Automatize o seu financeiro! Economize horas de trabalho manual sincronizando seus extratos bancários (OFX) diretamente com o RentAllControl.
+              Automatize o seu financeiro! Economize horas de trabalho manual sincronizando seus extratos bancários diretamente com o RentAllControl.
             </p>
             
             <div className="grid sm:grid-cols-2 gap-4 text-left max-w-xl mx-auto mb-10">
