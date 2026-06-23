@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { Header } from "@/components/shared/Header";
 import { TransactionForm } from "@/components/financeiro/TransactionForm";
+import { PaymentModal } from "@/components/financeiro/PaymentModal";
 import { CsvImportModal } from "@/components/shared/CsvImportModal";
 import { ConciliacaoBancaria } from "@/components/financeiro/ConciliacaoBancaria";
 import { formatCurrency, formatDate, TRANSACTION_CATEGORIES, isOverdue } from "@/lib/utils";
@@ -86,6 +87,7 @@ export default function FinanceiroPage() {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editItem, setEditItem] = useState<Transaction | null>(null);
+  const [payModalItem, setPayModalItem] = useState<Transaction | null>(null);
   const [defaultType, setDefaultType] = useState<"receita" | "despesa">("receita");
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -100,14 +102,19 @@ export default function FinanceiroPage() {
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: async (payload: { id: string; status: "pago" | "recebido" }) => {
+    mutationFn: async (payload: { id: string; status: "pago" | "recebido"; paid_date: string; amount: number; notes: string }) => {
       if (isReadOnly) {
         throw new Error("Sua assinatura ou período de testes expirou. Ative ou regularize sua assinatura para realizar alterações.");
       }
       const supabase = createClient();
       const { error } = await supabase
         .from("transactions")
-        .update({ status: payload.status, paid_date: new Date().toISOString().split("T")[0] })
+        .update({ 
+          status: payload.status, 
+          paid_date: payload.paid_date,
+          amount: payload.amount,
+          notes: payload.notes
+        })
         .eq("id", payload.id);
       if (error) throw error;
     },
@@ -365,7 +372,7 @@ export default function FinanceiroPage() {
                           <div className="flex items-center gap-1">
                             {tx.status !== "pago" && tx.status !== "recebido" && tx.status !== "cancelado" && (
                               <button
-                                onClick={() => markPaidMutation.mutate({ id: tx.id, status: tx.type === "receita" ? "recebido" : "pago" })}
+                                onClick={() => setPayModalItem(tx)}
                                 className="p-1.5 hover:bg-green-500/10 rounded-lg text-muted-foreground hover:text-green-600 transition-colors"
                                 title={tx.type === "receita" ? "Marcar como recebido" : "Marcar como pago"}
                               >
@@ -395,6 +402,17 @@ export default function FinanceiroPage() {
           </>
         )}
       </div>
+
+      {payModalItem && (
+        <PaymentModal
+          transaction={payModalItem}
+          onClose={() => setPayModalItem(null)}
+          onConfirm={(payload) => {
+            markPaidMutation.mutate(payload);
+            setPayModalItem(null);
+          }}
+        />
+      )}
 
       {showForm && (
         <TransactionForm
