@@ -81,6 +81,15 @@ export const asaas = {
     return asaasRequest("/subscriptions", "POST", data, apiKey);
   },
 
+  async updateSubscription(id: string, data: {
+    value?: number;
+    billingType?: "BOLETO" | "CREDIT_CARD" | "PIX";
+    nextDueDate?: string;
+    description?: string;
+  }, apiKey?: string) {
+    return asaasRequest(`/subscriptions/${id}`, "POST", data, apiKey);
+  },
+
   async listCharges(filters?: {
     customer?: string;
     status?: string;
