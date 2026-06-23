@@ -59,7 +59,8 @@ export function PaymentModal({ transaction, onClose, onConfirm }: Props) {
                 required
                 value={paidDate}
                 onChange={(e) => setPaidDate(e.target.value)}
-                className="input pl-9"
+                className="input"
+                style={{ paddingLeft: '2.5rem' }}
               />
             </div>
           </div>
@@ -76,7 +77,8 @@ export function PaymentModal({ transaction, onClose, onConfirm }: Props) {
                 prefix="R$ "
                 decimalScale={2}
                 fixedDecimalScale
-                className="input pl-9"
+                className="input"
+                style={{ paddingLeft: '2.5rem' }}
                 required
               />
             </div>
@@ -94,7 +96,8 @@ export function PaymentModal({ transaction, onClose, onConfirm }: Props) {
                 prefix="R$ "
                 decimalScale={2}
                 fixedDecimalScale
-                className="input pl-9"
+                className="input"
+                style={{ paddingLeft: '2.5rem' }}
               />
             </div>
           </div>
