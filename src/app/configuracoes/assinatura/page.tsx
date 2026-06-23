@@ -14,6 +14,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface Invoice {
   id: string;
@@ -38,6 +39,8 @@ export default function AssinaturaPage() {
   const [billingType, setBillingType] = useState<"PIX" | "BOLETO">("PIX");
   const [cnpj, setCnpj] = useState("");
   const [billingEmail, setBillingEmail] = useState("");
+  const [includeAddon, setIncludeAddon] = useState(false);
+  const { hasConciliationAddon } = useSubscription();
 
   // Modais State
   const [pixModalData, setPixModalData] = useState<{ id: string; qrCode: string; payload: string } | null>(null);
@@ -136,6 +139,7 @@ export default function AssinaturaPage() {
           name: company.name,
           cnpj,
           email: billingEmail,
+          includeAddon: hasConciliationAddon || includeAddon,
         }),
       });
 
@@ -389,6 +393,32 @@ export default function AssinaturaPage() {
               </div>
             </div>
 
+            {/* Módulo Adicional */}
+            {!hasConciliationAddon && (
+              <div className="pt-4 border-t">
+                <h4 className="text-sm font-semibold mb-3">Módulos Adicionais</h4>
+                <div 
+                  onClick={() => setIncludeAddon(!includeAddon)}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                    includeAddon ? "border-emerald-500 bg-emerald-500/5 shadow-sm" : "hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 ${includeAddon ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-muted-foreground/30'}`}>
+                      {includeAddon && <Check className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <h5 className="font-bold">Conciliação Bancária Automática</h5>
+                      <p className="text-xs text-muted-foreground mt-0.5">Sincronize extratos OFX e dê baixa automática em faturas.</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-emerald-600">+ R$ 59,90<span className="text-[10px] text-muted-foreground font-normal">/mês</span></p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Informações de Faturamento */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
               <div className="md:col-span-2">
@@ -457,7 +487,7 @@ export default function AssinaturaPage() {
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4" />
-                    {hasSubscription ? "Renovar Assinatura" : `Ativar Plano com ${selectedPlan === "pro" ? "R$ 299,90" : "R$ 149,90"}/mês`}
+                    {hasSubscription ? "Atualizar Faturamento" : `Ativar Plano (Total: R$ ${(selectedPlan === "pro" ? 299.90 : 149.90) + (includeAddon ? 59.90 : 0)}/mês)`}
                   </>
                 )}
               </button>
