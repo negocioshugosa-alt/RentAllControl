@@ -33,6 +33,11 @@ export function useSubscription() {
 
   const isPastDue = status === "past_due" || isSubscriptionExpired;
   const isReadOnly = isTrialExpired || isPastDue;
+  
+  const purchasedConciliation = company?.has_conciliation_addon === true;
+  // O módulo fica liberado se comprado ou se estiver no período de testes ativo.
+  // Entretanto, se o sistema como um todo estiver bloqueado, o módulo também não pode ser usado para edições.
+  const hasConciliationAddon = purchasedConciliation || (status === "trialing" && !isTrialExpired);
 
   return {
     plan,
@@ -41,6 +46,7 @@ export function useSubscription() {
     isPastDue,
     isReadOnly,
     trialDaysLeft,
+    hasConciliationAddon,
     isLoading,
     company,
   };
