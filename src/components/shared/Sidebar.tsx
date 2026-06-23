@@ -42,6 +42,12 @@ const navItems = [
       { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
     ],
   },
+  {
+    title: "Sistema",
+    items: [
+      { href: "/configuracoes", label: "Configurações", icon: Settings },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -112,15 +118,25 @@ export function Sidebar({
           </div>
         )}
         {!isCollapsed && (
-          <div className="min-w-0 transition-opacity duration-300 flex-1">
-            <p className="font-display font-bold text-white text-sm leading-tight truncate">{companyName}</p>
-            <p className="text-xs truncate mt-0.5" style={{ color: "hsl(var(--sidebar-muted))" }}>{userName}</p>
+          <div className="min-w-0 flex-1 flex items-center justify-between transition-opacity duration-300 pl-2">
+            <div className="min-w-0 pr-2">
+              <p className="font-display font-bold text-white text-sm leading-tight truncate">{companyName}</p>
+              <p className="text-xs truncate mt-0.5" style={{ color: "hsl(var(--sidebar-muted))" }}>{userName}</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0 mr-1"
+              title="Sair do sistema"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {navItems.map((section) => (
           <div key={section.title}>
             {isCollapsed ? (
@@ -181,36 +197,22 @@ export function Sidebar({
             </ul>
           </div>
         ))}
+
+        {/* Logout quando collapsed */}
+        {isCollapsed && (
+          <div className="pt-4 mt-auto">
+            <div className="border-t border-white/5 mb-4" />
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="sidebar-link justify-center px-0 w-10 h-10 mx-auto rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
+              title="Sair"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </nav>
-
-      {/* Footer */}
-      <div className="p-3 border-t border-white/5 space-y-0.5">
-        <Link
-          href="/configuracoes"
-          className={cn(
-            "sidebar-link transition-all duration-300",
-            isCollapsed && "justify-center px-0 w-10 h-10 mx-auto rounded-lg"
-          )}
-          title={isCollapsed ? "Configurações" : undefined}
-        >
-          <Settings className="w-4 h-4" />
-          {!isCollapsed && <span>Configurações</span>}
-        </Link>
-        <button
-          onClick={handleLogout}
-          disabled={loggingOut}
-          className={cn(
-            "sidebar-link w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300",
-            isCollapsed && "justify-center px-0 w-10 h-10 mx-auto rounded-lg"
-          )}
-          title={isCollapsed ? "Sair" : undefined}
-        >
-          <LogOut className="w-4 h-4" />
-          {!isCollapsed && <span>{loggingOut ? "Saindo…" : "Sair"}</span>}
-        </button>
-
-
-      </div>
     </aside>
   );
 }
