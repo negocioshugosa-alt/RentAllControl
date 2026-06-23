@@ -249,33 +249,59 @@ export function ConciliacaoBancaria({ companyId }: Props) {
   });
 
   const processFile = useCallback(
-    (file: File) => {
-      if (!file.name.toLowerCase().endsWith(".csv")) {
-        toast.error("Arquivo inválido. Envie um arquivo .CSV exportado do seu banco.");
+    async (file: File) => {
+      const isCSV = file.name.toLowerCase().endsWith(".csv");
+      const isExcel = file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls");
+
+      if (!isCSV && !isExcel) {
+        toast.error("Arquivo inválido. Envie um arquivo .CSV ou Excel (.xlsx, .xls) exportado do seu banco.");
         return;
       }
       setFileName(file.name);
       setResult(null);
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          // Tenta UTF-8 primeiro; se falhar, usa latin1 (comum em bancos BR)
-          let text = e.target?.result as string;
-          if (!text) throw new Error("Arquivo vazio");
+      try {
+        if (isCSV) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              let text = e.target?.result as string;
+              if (!text) throw new Error("Arquivo vazio");
 
-          const rows = parseCSV(text);
+              const rows = parseCSV(text);
+              if (rows.length === 0) {
+                toast.error("Nenhum lançamento encontrado no extrato. Verifique o formato do arquivo.");
+                return;
+              }
+              setExtract(rows);
+              toast.success(`${rows.length} lançamentos lidos! Clique em Iniciar Conciliação.`);
+            } catch {
+              toast.error("Erro ao processar o arquivo. Verifique se é válido.");
+            }
+          };
+          reader.readAsText(file, "latin1");
+        } else {
+          // Importa xlsx dinamicamente e lê o arquivo como array buffer
+          const XLSX = await import("xlsx");
+          const buffer = await file.arrayBuffer();
+          const workbook = XLSX.read(buffer, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          // Converte a aba do Excel para CSV com separador ; para reaproveitar nossa lógica de parseCSV
+          const csvText = XLSX.utils.sheet_to_csv(worksheet, { FS: ";" });
+          const rows = parseCSV(csvText);
+          
           if (rows.length === 0) {
-            toast.error("Nenhum lançamento encontrado no extrato. Verifique o formato do CSV.");
+            toast.error("Nenhum lançamento encontrado no extrato Excel. Verifique o formato.");
             return;
           }
           setExtract(rows);
           toast.success(`${rows.length} lançamentos lidos! Clique em Iniciar Conciliação.`);
-        } catch {
-          toast.error("Erro ao processar o arquivo. Verifique se é um CSV válido.");
         }
-      };
-      reader.readAsText(file, "latin1");
+      } catch (err) {
+        toast.error("Erro ao processar o arquivo.");
+      }
     },
     [transactions]
   );
@@ -379,7 +405,7 @@ export function ConciliacaoBancaria({ companyId }: Props) {
         <input
           ref={inputRef}
           type="file"
-          accept=".csv"
+          accept=".csv, .xlsx, .xls"
           className="hidden"
           onChange={handleFileChange}
         />
@@ -412,7 +438,7 @@ export function ConciliacaoBancaria({ companyId }: Props) {
                   {loadingTx ? "Carregando lançamentos..." : "Clique ou arraste o extrato bancário"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Formato: <strong>CSV</strong> exportado do seu banco (Bradesco, Itaú, BB, Santander, Sicoob, etc.)
+                  Formato: <strong>CSV ou Excel (.xlsx, .xls)</strong> exportado do seu banco
                 </p>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-lg">
