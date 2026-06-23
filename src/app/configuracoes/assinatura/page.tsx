@@ -218,6 +218,7 @@ export default function AssinaturaPage() {
   const hasSubscription = !!company?.asaas_subscription_id;
   const trialDaysLeft = company ? Math.max(0, Math.ceil((new Date(company.subscription_trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 0;
   const isTrialExpired = company?.subscription_status === "trialing" && trialDaysLeft <= 0;
+  const isSubscriptionExpired = company?.subscription_status === "active" && company?.subscription_expires_at && new Date(company.subscription_expires_at) < new Date();
 
   return (
     <div className="flex flex-col flex-1">
@@ -261,11 +262,12 @@ export default function AssinaturaPage() {
                   </h3>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                  company?.subscription_status === "active" ? "bg-emerald-500/10 text-emerald-600" :
-                  company?.subscription_status === "past_due" ? "bg-rose-500/10 text-rose-600 animate-pulse" :
+                  (company?.subscription_status === "active" && !isSubscriptionExpired) ? "bg-emerald-500/10 text-emerald-600" :
+                  (company?.subscription_status === "past_due" || isSubscriptionExpired) ? "bg-rose-500/10 text-rose-600 animate-pulse" :
                   "bg-amber-500/10 text-amber-600"
                 }`}>
-                  {company?.subscription_status === "active" ? "Assinatura Ativa" :
+                  {(company?.subscription_status === "active" && !isSubscriptionExpired) ? "Assinatura Ativa" :
+                   isSubscriptionExpired ? "Assinatura Expirada" :
                    company?.subscription_status === "past_due" ? "Atrasado/Inadimplente" :
                    isTrialExpired ? "Trial Expirado" : `Período Trial - ${trialDaysLeft} dias`}
                 </span>
