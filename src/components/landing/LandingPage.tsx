@@ -182,43 +182,39 @@ export function LandingPage() {
       {/* Hero */}
       <section className="relative z-10 pt-24 pb-20 px-6">
         <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.03] text-blue-400 text-xs font-bold mb-8 border border-white/[0.08] shadow-inner">
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span>ERP Inteligente para Locadoras — 100% em Nuvem</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.03] text-slate-300 text-xs font-bold mb-8 border border-white/[0.08]">
+            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+            <span>ERP 100% em Nuvem — Construído para Locadoras Inteligentes</span>
           </div>
           
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6.5xl font-black leading-tight tracking-tight mb-8">
-            Controle seus ativos de locação,<br className="hidden sm:inline" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-violet-400">
-              multiplique seu lucro
-            </span> e reduza perdas.
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-black leading-tight tracking-tight mb-8">
+            Revolucione a gestão de suas locações.<br className="hidden sm:inline" />
+            <span className="text-white">Mais controle, menos dor de cabeça.</span>
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-            Esqueça planilhas manuais. O RentAllControl centraliza ativos, contratos, financeiro
-            e calcula o <strong className="text-slate-200">ROI exato por ativo</strong> automaticamente.
-            Uma plataforma <strong className="text-blue-400">universal e 100% configurável</strong> para gerenciar locação de qualquer ativo físico no mercado.
+            Abandone planilhas confusas. O <strong className="text-slate-200">RentAllControl</strong> centraliza seus contratos, pagamentos, manutenções e calcula automaticamente o retorno de cada equipamento seu em tempo real.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/register"
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-base hover:shadow-xl hover:shadow-blue-500/20 hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto justify-center"
+              className="flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-blue-500 transition-colors w-full sm:w-auto justify-center"
             >
-              Testar Grátis por 30 Dias
+              Testar Sistema Grátis
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
-              href="/login"
-              className="flex items-center gap-2 px-8 py-4 rounded-2xl border border-white/[0.08] bg-white/[0.01] hover:bg-white/[0.05] hover:border-white/[0.15] text-slate-300 hover:text-white transition-all duration-200 font-semibold w-full sm:w-auto justify-center"
+              href="#planos"
+              className="flex items-center gap-2 px-8 py-4 rounded-xl border border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 transition-colors font-semibold w-full sm:w-auto justify-center"
             >
-              Já sou cliente
+              Ver Planos
             </Link>
           </div>
           
-          <p className="text-xs text-slate-500 mt-5 flex items-center justify-center gap-2">
-            <Shield className="w-3.5 h-3.5 text-blue-500" />
-            Sem necessidade de cartão de crédito · Configuração em 2 minutos
+          <p className="text-xs text-slate-500 mt-6 flex items-center justify-center gap-2">
+            <Shield className="w-3.5 h-3.5 text-slate-400" />
+            Não exigimos cartão de crédito. Comece agora.
           </p>
         </div>
 
@@ -394,11 +390,11 @@ export function LandingPage() {
             {segments.map((seg, i) => (
               <div 
                 key={i}
-                className={`rounded-2xl border p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-0.5 ${
-                  seg.highlighted 
-                    ? "bg-gradient-to-br from-blue-950/30 to-indigo-950/20 border-blue-500/30 shadow-lg shadow-blue-500/5 hover:border-blue-500/50" 
-                    : "bg-white/[0.01] border-white/[0.05] hover:border-white/[0.1] hover:bg-white/[0.03]"
-                }`}
+                className={`rounded-2xl border p-6 transition-all duration-200 cursor-pointer ${
+                activeSegmentIndex === i 
+                  ? "bg-[#0c101f] border-slate-700/50 shadow-lg" 
+                  : "bg-white/[0.01] border-white/[0.05] hover:bg-white/[0.03]"
+              }`}
               >
                 <div>
                   <div className="flex justify-between items-start gap-4 mb-5">
@@ -423,13 +419,6 @@ export function LandingPage() {
                 )}
               </div>
             ))}
-          </div>
-
-          <div className="mt-14 rounded-2xl border border-white/[0.06] bg-white/[0.01] p-8 text-center max-w-3xl mx-auto">
-            <h4 className="font-bold text-lg text-slate-100 mb-2">Não encontrou seu nicho exato listado acima?</h4>
-            <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-              Não se preocupe! O RentAllControl possui campos e termos configuráveis para atender qualquer tipo de locação de ativos físicos. Desde andaimes gigantes a decorações finas de casamento, o painel se adapta a você.
-            </p>
           </div>
         </div>
       </section>
@@ -469,10 +458,10 @@ export function LandingPage() {
             {plans.map((plan, i) => (
               <div
                 key={i}
-                className={`relative rounded-3xl border p-8 flex flex-col justify-between transition-all duration-300 ${
+                className={`relative rounded-3xl border p-8 flex flex-col justify-between transition-colors ${
                   plan.highlight 
-                    ? "bg-gradient-to-b from-[#0e1329] to-[#080b18] border-blue-500 shadow-2xl shadow-blue-500/5 scale-[1.03]" 
-                    : "bg-white/[0.02] border-white/[0.06]"
+                    ? "bg-[#0a0e1a] border-slate-700/50" 
+                    : "bg-white/[0.02] border-white/[0.05]"
                 }`}
               >
                 {plan.highlight && (
@@ -503,19 +492,47 @@ export function LandingPage() {
                     ))}
                   </ul>
                 </div>
-
+                
                 <Link
                   href="/register"
-                  className={`text-center py-4 rounded-xl text-sm font-bold transition-all duration-300 ${
+                  className={`w-full py-3.5 rounded-xl font-bold text-sm transition-colors text-center ${
                     plan.highlight
-                      ? "bg-blue-500 text-white hover:bg-blue-600 shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20"
-                      : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/[0.06]"
+                      ? "bg-blue-600 text-white hover:bg-blue-500"
+                      : "bg-white/[0.05] text-white hover:bg-white/[0.1]"
                   }`}
                 >
                   {plan.cta}
                 </Link>
               </div>
             ))}
+          </div>
+
+          {/* Módulo Adicional */}
+          <div className="max-w-3xl mx-auto mt-6">
+            <div className="relative rounded-3xl border border-white/[0.05] bg-white/[0.02] p-8 flex flex-col sm:flex-row items-center justify-between transition-colors">
+              <div className="flex-1 text-center sm:text-left mb-6 sm:mb-0">
+                <span className="text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full mb-4 inline-block">
+                  Módulo Adicional
+                </span>
+                <h3 className="font-bold text-xl md:text-2xl text-slate-100 mb-2">Conciliação Bancária</h3>
+                <p className="text-sm text-slate-400 font-normal leading-relaxed max-w-md">
+                  Importe planilhas OFX, Excel ou CSV. Feche seu caixa de forma automática, encontre divergências em segundos e acabe com as perdas financeiras não detectadas.
+                </p>
+              </div>
+              <div className="flex flex-col items-center sm:items-end sm:pl-8 border-t sm:border-t-0 sm:border-l border-white/[0.05] pt-6 sm:pt-0 mt-2 sm:mt-0 w-full sm:w-auto">
+                <div className="flex items-end gap-1 mb-3">
+                  <span className="text-sm text-slate-400 mb-1.5 font-medium">+</span>
+                  <span className="font-display text-3xl font-black text-white">R$ 59,90</span>
+                  <span className="text-sm text-slate-400 mb-1.5 font-medium">/mês</span>
+                </div>
+                <Link
+                  href="/register?addon=conciliacao"
+                  className="bg-white/[0.05] text-white hover:bg-white/[0.1] text-sm font-bold px-6 py-3 rounded-xl transition-colors w-full sm:w-auto text-center border border-white/[0.05]"
+                >
+                  Incluir no Plano
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
