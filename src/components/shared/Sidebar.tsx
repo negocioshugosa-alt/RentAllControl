@@ -129,7 +129,10 @@ export function Sidebar({
             )}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                let isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                if (item.href === "/financeiro" && pathname.startsWith("/financeiro/conciliacao")) {
+                  isActive = false;
+                }
                 return (
                   <li key={item.href}>
                     <Link
