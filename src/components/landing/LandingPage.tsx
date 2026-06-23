@@ -2,6 +2,7 @@
 
 // src/components/landing/LandingPage.tsx
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Zap, BarChart3, Wrench, FileText, DollarSign, Bell, Check, 
   ChevronDown, ArrowRight, Users, Shield, TrendingUp, Sparkles,
@@ -128,6 +129,7 @@ const plans = [
       "Prevenção de fraudes e divergências"
     ],
     highlight: false,
+    addon: true,
     cta: "Incluir no Plano",
   }
 ];
@@ -163,6 +165,11 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#070a13] text-slate-100 font-sans overflow-x-hidden">
+      {/* Background Watermark Logo */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] opacity-[0.02] pointer-events-none z-0">
+        <Image src="/logo.png" alt="RentAllControl" fill className="object-contain" priority />
+      </div>
+
       {/* Dynamic Background Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-blue-600/10 via-violet-600/5 to-transparent rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-[1200px] right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -479,12 +486,17 @@ export function LandingPage() {
                 }`}
               >
                 {plan.highlight && (
-                  <span className="absolute -top-3.5 left-8 text-[10px] font-black uppercase tracking-widest bg-blue-500 text-white px-3 py-1 rounded-full border border-blue-400/20 shadow-md">
+                  <span className="absolute -top-3.5 left-8 text-[10px] font-black uppercase tracking-widest bg-blue-500 text-white px-3 py-1 rounded-full border border-blue-400/20 shadow-md z-10">
                     Mais Recomendado
                   </span>
                 )}
+                {plan.addon && (
+                  <span className="absolute -top-3.5 left-8 text-[10px] font-black uppercase tracking-widest bg-slate-700 text-slate-100 px-3 py-1 rounded-full border border-slate-500 shadow-md z-10">
+                    Módulo Adicional
+                  </span>
+                )}
                 
-                <div>
+                <div className="relative z-10">
                   <h3 className="font-black text-xl md:text-2xl text-slate-100 mb-2">{plan.name}</h3>
                   <p className="text-xs text-slate-400 mb-6 font-normal leading-relaxed">{plan.desc}</p>
                   
