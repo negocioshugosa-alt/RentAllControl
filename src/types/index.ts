@@ -37,6 +37,7 @@ export interface Company {
   asaas_customer_id?: string;
   asaas_subscription_id?: string;
   subscription_expires_at?: string;
+  has_conciliation_addon?: boolean;
 }
 
 export interface BankAccount {
