@@ -8,7 +8,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Zap, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { Logo } from "@/components/shared/Logo";
 
 const schema = z.object({
   email: z.string().email("Email inválido"),
@@ -71,11 +72,8 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-1/2 bg-[hsl(var(--sidebar-bg))] flex-col p-12 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-transparent pointer-events-none" />
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display font-bold text-xl">RentAllControl</span>
+          <div className="mb-16">
+            <Logo />
           </div>
           <h1 className="font-display font-bold text-4xl leading-tight mb-4">
             Gestão completa<br />para sua locadora
@@ -108,11 +106,8 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-display font-bold text-lg">RentAllControl</span>
+          <div className="mb-8 lg:hidden">
+            <Logo />
           </div>
 
           <h2 className="text-2xl font-bold font-display mb-1">Bem-vindo de volta</h2>
