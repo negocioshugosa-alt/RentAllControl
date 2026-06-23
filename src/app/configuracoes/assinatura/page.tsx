@@ -394,7 +394,7 @@ export default function AssinaturaPage() {
             </div>
 
             {/* Módulo Adicional */}
-            {!hasConciliationAddon && (
+            {!(company?.has_conciliation_addon) && (
               <div className="pt-4 border-t">
                 <h4 className="text-sm font-semibold mb-3">Módulos Adicionais</h4>
                 <div 
